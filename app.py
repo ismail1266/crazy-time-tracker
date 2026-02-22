@@ -7,7 +7,6 @@ import threading
 import time
 import json
 from collections import defaultdict
-import numpy as np
 
 app = Flask(__name__, static_folder='.')
 CORS(app)  # সব CORS সমস্যা সমাধান
