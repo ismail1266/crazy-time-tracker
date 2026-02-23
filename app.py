@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request, send_from_directory, render_template
+# filename: app.py
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import requests
 import os
@@ -6,399 +7,207 @@ from datetime import datetime, timedelta
 import threading
 import time
 import json
+import pickle
 from collections import defaultdict
+import numpy as np
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+import atexit
+import logging
+
+# লগিং সেটআপ
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, static_folder='.')
-CORS(app)  # সব CORS সমস্যা সমাধান
+CORS(app)
 
-# API কনফিগারেশন
+# ==================== কনফিগারেশন ====================
 API_URL = "https://api-cs.casino.org/svc-evolution-game-events/api/crazytime"
 TABLE_ID = "CrazyTime0000001"
+DATA_FILE = "crazytime_data.pkl"
+MODEL_FILE = "ai_model.pkl"
+UPDATE_INTERVAL = 5  # ৫ সেকেন্ড
 
-# গ্লোবাল ক্যাশ (সার্ভার সাইড ক্যাশ)
-global_cache = {
-    'data': None,           # সম্পূর্ণ ৭২ ঘন্টার ডাটা
-    'timestamp': None,      # ক্যাশ তৈরির সময়
-    'is_loading': False,    # লোডিং অবস্থা
-    'total_count': 0,        # মোট রেজাল্ট সংখ্যা
-    'last_id': None         # শেষ আইডি
-}
-
-# ============= নতুন সংযোজন ১: ফাইল স্টোরেজ =============
-DATA_FILE = 'crazytime_data.json'
-
-def save_data_to_file():
-    """ডাটা ফাইলে সেভ করে (Railway restart হলেও ডাটা থাকবে)"""
-    try:
-        with open(DATA_FILE, 'w') as f:
-            json.dump({
-                'data': global_cache['data'],
-                'timestamp': global_cache['timestamp'].isoformat() if global_cache['timestamp'] else None,
-                'total_count': global_cache['total_count'],
-                'last_id': global_cache['last_id']
-            }, f)
-        print(f"💾 ডাটা ফাইলে সেভ করা হয়েছে: {global_cache['total_count']} টি")
-    except Exception as e:
-        print(f"❌ ফাইল সেভ করতে সমস্যা: {e}")
-
-def load_data_from_file():
-    """ফাইল থেকে ডাটা লোড করে"""
-    try:
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, 'r') as f:
-                data = json.load(f)
-                global_cache['data'] = data.get('data')
-                if data.get('timestamp'):
-                    global_cache['timestamp'] = datetime.fromisoformat(data['timestamp'])
-                global_cache['total_count'] = data.get('total_count', 0)
-                global_cache['last_id'] = data.get('last_id')
-                print(f"📂 ফাইল থেকে ডাটা লোড করা হয়েছে: {global_cache['total_count']} টি")
-                return True
-    except Exception as e:
-        print(f"❌ ফাইল লোড করতে সমস্যা: {e}")
-    return False
-
-# ============= নতুন সংযোজন ২: ৫০,০০০ লিমিট =============
-def enforce_storage_limit():
-    """সর্বোচ্চ ৫০,০০০ ডাটা নিশ্চিত করে"""
-    if global_cache['data'] and len(global_cache['data']) > 50000:
-        removed_count = len(global_cache['data']) - 50000
-        global_cache['data'] = global_cache['data'][-50000:]  # শেষের ৫০,০০০ রাখে
-        global_cache['total_count'] = 50000
-        print(f"📊 {removed_count} টি পুরোনো ডাটা বাদ দেওয়া হয়েছে (৫০,০০০ লিমিট)")
-        return True
-    return False
-
-# ============= আপনার বিদ্যমান fetch ফাংশন (অপরিবর্তিত) =============
-def fetch_all_crazytime_data():
-    """পটভূমিতে ৭২ ঘন্টার সকল ডাটা সংগ্রহ করে"""
-    global global_cache
+# ==================== গ্লোবাল স্ট্রাকচার ====================
+class CrazyTimeTracker:
+    def __init__(self):
+        self.data = []              # সব ডাটা
+        self.last_id = None         # শেষ আইডি
+        self.total_count = 0        # মোট সংখ্যা
+        self.is_loading = False     # লোডিং স্ট্যাটাস
+        self.last_update = None     # শেষ আপডেট সময়
+        self.lock = threading.RLock() # থ্রেড সেফটি (RLock ব্যবহার করুন)
+        
+# ==================== AI মডেল ক্লাস ====================
+class AIPredictionModel:
+    def __init__(self):
+        self.markov_chain = {}
+        self.dealer_patterns = {}
+        self.time_patterns = {}
+        self.multiplier_patterns = {}
+        self.cycles = {}
+        self.hot_zones = []
+        self.cold_zones = []
+        self.probabilities = {}
+        self.strategy_performance = {}
+        self.accuracy = 0.5
+        self.total_spins = 0
+        self.training_history = []
+        self.ensemble_weights = {
+            'markov': 0.30,
+            'dealer': 0.25,
+            'multiplier': 0.20,
+            'time': 0.15,
+            'hot': 0.10
+        }
+        
+    def save(self, filename):
+        try:
+            with open(filename, 'wb') as f:
+                pickle.dump(self, f)
+            logger.info(f"✅ মডেল সেভ করা হয়েছে: {filename}")
+        except Exception as e:
+            logger.error(f"❌ মডেল সেভ করতে সমস্যা: {e}")
     
-    if global_cache['is_loading']:
-        print("⏳ ইতিমধ্যে ডাটা লোড হচ্ছে...")
+    @staticmethod
+    def load(filename):
+        try:
+            with open(filename, 'rb') as f:
+                model = pickle.load(f)
+                logger.info(f"✅ মডেল লোড করা হয়েছে: {filename}")
+                return model
+        except:
+            logger.info("🆕 নতুন মডেল তৈরি হচ্ছে")
+            return AIPredictionModel()
+
+# ==================== গ্লোবাল ভেরিয়েবল ====================
+tracker = CrazyTimeTracker()
+ai_model = AIPredictionModel.load(MODEL_FILE)
+scheduler = BackgroundScheduler()
+
+# ==================== ডাটা পার্সিস্টেন্স ====================
+def save_data():
+    """ডাটা ফাইলে সেভ করে"""
+    try:
+        with tracker.lock:
+            data_to_save = {
+                'data': tracker.data,
+                'last_id': tracker.last_id,
+                'total_count': tracker.total_count,
+                'last_update': tracker.last_update.isoformat() if tracker.last_update else None
+            }
+            with open(DATA_FILE, 'wb') as f:
+                pickle.dump(data_to_save, f)
+            logger.info(f"✅ ডাটা সেভ করা হয়েছে: {tracker.total_count} টি")
+    except Exception as e:
+        logger.error(f"❌ ডাটা সেভ করতে সমস্যা: {e}")
+
+def load_data():
+    """ডাটা ফাইল থেকে লোড করে"""
+    try:
+        with open(DATA_FILE, 'rb') as f:
+            data = pickle.load(f)
+            with tracker.lock:
+                tracker.data = data.get('data', [])
+                tracker.last_id = data.get('last_id')
+                tracker.total_count = data.get('total_count', 0)
+                last_update = data.get('last_update')
+                if last_update:
+                    tracker.last_update = datetime.fromisoformat(last_update)
+            logger.info(f"📦 {tracker.total_count} টি ডাটা লোড করা হয়েছে")
+            return True
+    except FileNotFoundError:
+        logger.info("🆕 কোন ডাটা ফাইল নেই, নতুন করে সংগ্রহ হবে")
+        return False
+    except Exception as e:
+        logger.error(f"❌ ডাটা লোড করতে সমস্যা: {e}")
+        return False
+
+# ==================== ৭২ ঘন্টার ডাটা কালেকশন ====================
+def fetch_72h_data():
+    """সার্ভার স্টার্টে ৭২ ঘন্টার ডাটা সংগ্রহ করে"""
+    if tracker.is_loading:
+        logger.info("⏳ ইতিমধ্যে ডাটা লোড হচ্ছে...")
         return
     
-    global_cache['is_loading'] = True
-    print("=" * 60)
-    print("🚀 ক্রেজি টাইম ডাটা কালেক্টর শুরু হচ্ছে...")
-    print("=" * 60)
+    tracker.is_loading = True
+    logger.info("=" * 60)
+    logger.info("🚀 ৭২ ঘন্টার ডাটা সংগ্রহ শুরু...")
     
     try:
         all_data = []
         page = 0
-        has_more = True
-        empty_page_count = 0
-        total_pages = 0
+        empty_pages = 0
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Origin': 'https://www.casino.org',
+            'Referer': 'https://www.casino.org/'
+        }
         
-        start_time = time.time()
-        
-        while has_more and page < 500 and empty_page_count < 3:
-            print(f"📥 পৃষ্ঠা {page + 1} লোড হচ্ছে... (প্রতি পৃষ্ঠায় ১০০টি)", end="\r")
-            
+        while empty_pages < 3 and page < 500:
             url = f"{API_URL}?page={page}&size=100&sort=data.settledAt,desc&duration=72&wheelResults=Pachinko,CashHunt,CrazyBonus,CoinFlip,1,2,5,10&isTopSlotMatched=true,false&tableId={TABLE_ID}"
             
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Origin': 'https://www.casino.org',
-                'Referer': 'https://www.casino.org/'
-            }
-            
-            response = requests.get(url, headers=headers, timeout=15)
-            
-            if response.status_code != 200:
-                print(f"\n⚠️ API ত্রুটি: {response.status_code}")
+            try:
+                logger.info(f"📥 পৃষ্ঠা {page + 1} লোড হচ্ছে...")
+                response = requests.get(url, headers=headers, timeout=15)
+                
+                if response.status_code != 200:
+                    logger.warning(f"⚠️ API ত্রুটি: {response.status_code}")
+                    break
+                
+                data = response.json()
+                page_data = data if isinstance(data, list) else data.get('content', [])
+                
+                if len(page_data) == 0:
+                    empty_pages += 1
+                    logger.info(f"📭 পৃষ্ঠা {page + 1} খালি")
+                else:
+                    all_data.extend(page_data)
+                    page += 1
+                    empty_pages = 0
+                    logger.info(f"✅ পৃষ্ঠা {page} থেকে {len(page_data)} টি ডাটা (মোট: {len(all_data)})")
+                
+                time.sleep(0.3)  # রেট লিমিট এড়াতে
+                
+            except requests.exceptions.Timeout:
+                logger.warning(f"⏰ পৃষ্ঠা {page + 1} টাইমআউট")
                 break
-            
-            data = response.json()
-            
-            if isinstance(data, list):
-                page_data = data
-            elif isinstance(data, dict):
-                page_data = data.get('content', [])
-            else:
-                page_data = []
-            
-            if len(page_data) == 0:
-                empty_page_count += 1
-                if empty_page_count >= 3:
-                    print(f"\n📭 পরপর ৩টি খালি পৃষ্ঠা, থামানো হচ্ছে...")
-                    has_more = False
-            else:
-                all_data.extend(page_data)
-                page += 1
-                total_pages += 1
-                empty_page_count = 0
-            
-            time.sleep(0.3)
+            except Exception as e:
+                logger.error(f"⚠️ পৃষ্ঠা {page + 1} এ ত্রুটি: {e}")
+                break
         
-        elapsed_time = time.time() - start_time
-        
-        print("\n" + "=" * 60)
-        print(f"✅ ডাটা সংগ্রহ সম্পন্ন!")
-        print(f"📊 মোট পৃষ্ঠা: {total_pages}")
-        print(f"📦 মোট রেজাল্ট: {len(all_data)} টি")
-        print(f"⏱️  সময় লেগেছে: {elapsed_time:.1f} সেকেন্ড")
-        
-        # ডাটা সর্ট করুন (পুরোনো প্রথমে)
-        print("🔄 ডাটা সাজানো হচ্ছে...")
+        # ডাটা সর্ট (পুরোনো → নতুন)
+        logger.info("🔄 ডাটা সাজানো হচ্ছে...")
         all_data.sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
         
-        # ক্যাশে সংরক্ষণ
-        global_cache['data'] = all_data
-        global_cache['timestamp'] = datetime.now()
-        global_cache['total_count'] = len(all_data)
-        if len(all_data) > 0:
-            global_cache['last_id'] = all_data[-1].get('id')
+        with tracker.lock:
+            tracker.data = all_data
+            tracker.total_count = len(all_data)
+            if all_data:
+                tracker.last_id = all_data[-1].get('id')
+            tracker.last_update = datetime.now()
         
-        # ৫০,০০০ লিমিট প্রয়োগ
-        enforce_storage_limit()
+        # ডাটা সেভ
+        save_data()
         
-        # ফাইলেই সেভ করুন
-        save_data_to_file()
+        logger.info(f"✅ মোট {len(all_data)} টি ডাটা সংগ্রহ সম্পন্ন")
+        logger.info("=" * 60)
         
-        print(f"💾 ক্যাশে সংরক্ষিত: {len(global_cache['data'])} টি রেজাল্ট")
-        
-        # প্রেডিকশন মডেল আপডেট
-        update_prediction_model()
-        
-        print("=" * 60)
+        # AI মডেল ট্রেন
+        if len(all_data) >= 50:
+            train_ai_model()
         
     except Exception as e:
-        print(f"\n❌ গুরুতর ত্রুটি: {e}")
+        logger.error(f"❌ গুরুতর ত্রুটি: {e}")
         import traceback
         traceback.print_exc()
     finally:
-        global_cache['is_loading'] = False
+        tracker.is_loading = False
 
-# ============= আপনার বিদ্যমান প্রেডিকশন ফাংশন =============
-def update_prediction_model():
-    """প্রেডিকশন মডেল আপডেট করে"""
-    global prediction_model, global_cache
-    
-    if not global_cache['data']:
-        return
-    
-    data = global_cache['data']
-    
-    try:
-        print("🧠 প্রেডিকশন মডেল আপডেট করা হচ্ছে...")
-        
-        # বেসিক পরিসংখ্যান
-        total_spins = len(data)
-        outcomes = []
-        
-        for spin in data:
-            outcome = spin.get('data', {}).get('result', {}).get('outcome', {}).get('wheelResult', {})
-            if outcome.get('type') == 'Number':
-                outcomes.append(str(outcome.get('wheelSector', '0')))
-            else:
-                outcomes.append(outcome.get('wheelSector', 'Unknown'))
-        
-        # ফ্রিকোয়েন্সি ক্যালকুলেশন
-        frequency = defaultdict(int)
-        for outcome in outcomes:
-            frequency[outcome] += 1
-        
-        # প্রোবেবিলিটি ক্যালকুলেশন
-        probabilities = {}
-        for outcome, count in frequency.items():
-            probabilities[outcome] = count / total_spins
-        
-        # প্যাটার্ন ডিটেকশন (শর্ট টার্ম)
-        patterns = {}
-        for i in range(len(outcomes) - 3):
-            pattern = f"{outcomes[i]},{outcomes[i+1]},{outcomes[i+2]}"
-            next_outcome = outcomes[i+3]
-            
-            if pattern not in patterns:
-                patterns[pattern] = {'count': 0, 'next': defaultdict(int)}
-            
-            patterns[pattern]['count'] += 1
-            patterns[pattern]['next'][next_outcome] += 1
-        
-        # হট/কোল্ড জোন (শেষ ১০০ স্পিন)
-        last_100 = outcomes[-100:] if len(outcomes) >= 100 else outcomes
-        hot_zones = []
-        cold_zones = []
-        
-        for outcome in set(last_100):
-            count = last_100.count(outcome)
-            expected = len(last_100) * probabilities.get(outcome, 0)
-            deviation = (count - expected) / expected if expected > 0 else 0
-            
-            if deviation > 0.3:
-                hot_zones.append({'outcome': outcome, 'deviation': deviation, 'count': count})
-            elif deviation < -0.3:
-                cold_zones.append({'outcome': outcome, 'deviation': deviation, 'count': count})
-        
-        # স্ট্র্যাটেজি পারফরমেন্স
-        strategy_performance = {
-            'hot_following': calculate_strategy_accuracy('hot_following', outcomes),
-            'cold_tracking': calculate_strategy_accuracy('cold_tracking', outcomes),
-            'pattern_matching': calculate_strategy_accuracy('pattern_matching', outcomes),
-            'gap_trading': calculate_strategy_accuracy('gap_trading', outcomes)
-        }
-        
-        # মডেল আপডেট
-        prediction_model.update({
-            'patterns': patterns,
-            'probabilities': probabilities,
-            'hot_zones': sorted(hot_zones, key=lambda x: x['deviation'], reverse=True)[:5],
-            'cold_zones': sorted(cold_zones, key=lambda x: x['deviation'])[:5],
-            'last_updated': datetime.now().isoformat(),
-            'total_spins': total_spins,
-            'accuracy': calculate_model_accuracy(patterns, outcomes[-100:]),
-            'learning_phase': 'অপারেশনাল',
-            'strategy_performance': strategy_performance
-        })
-        
-        print(f"✅ প্রেডিকশন মডেল আপডেটেড: {total_spins} স্পিন বিশ্লেষিত")
-        
-    except Exception as e:
-        print(f"❌ প্রেডিকশন মডেল আপডেটে ত্রুটি: {e}")
-
-# ============= আপনার বিদ্যমান প্রেডিকশন মডেল =============
-prediction_model = {
-    'patterns': {},
-    'probabilities': {},
-    'hot_zones': [],
-    'cold_zones': [],
-    'last_updated': None,
-    'total_spins': 0,
-    'accuracy': 0.0,
-    'learning_phase': 'শিখছে',
-    'strategy_performance': {}
-}
-
-def calculate_strategy_accuracy(strategy, outcomes):
-    """প্রতিটি স্ট্র্যাটেজির অ্যাকুরেসি ক্যালকুলেট করে"""
-    if len(outcomes) < 20:
-        return 0.5
-    
-    correct = 0
-    total = 0
-    
-    for i in range(len(outcomes) - 1):
-        prediction = None
-        
-        if strategy == 'hot_following' and i > 10:
-            last_10 = outcomes[i-10:i]
-            if last_10:
-                prediction = max(set(last_10), key=last_10.count)
-                
-        elif strategy == 'cold_tracking' and i > 20:
-            last_20 = outcomes[i-20:i]
-            if last_20:
-                counts = defaultdict(int)
-                for o in last_20:
-                    counts[o] += 1
-                prediction = min(counts, key=counts.get)
-                
-        elif strategy == 'pattern_matching' and i > 3:
-            last_3 = outcomes[i-3:i]
-            pattern_key = f"{last_3[0]},{last_3[1]},{last_3[2]}"
-            if pattern_key in prediction_model.get('patterns', {}):
-                pattern_data = prediction_model['patterns'][pattern_key]
-                if pattern_data['next']:
-                    prediction = max(pattern_data['next'], key=pattern_data['next'].get)
-        
-        if prediction:
-            total += 1
-            if prediction == outcomes[i+1]:
-                correct += 1
-    
-    return correct / total if total > 0 else 0.5
-
-def calculate_model_accuracy(patterns, recent_outcomes):
-    """মডেলের সামগ্রিক অ্যাকুরেসি ক্যালকুলেট করে"""
-    if len(recent_outcomes) < 10:
-        return 0.5
-    
-    correct = 0
-    total = 0
-    
-    for i in range(len(recent_outcomes) - 1):
-        if i >= 3:
-            last_3 = recent_outcomes[i-3:i]
-            pattern_key = f"{last_3[0]},{last_3[1]},{last_3[2]}"
-            
-            if pattern_key in patterns:
-                pattern_data = patterns[pattern_key]
-                if pattern_data['next']:
-                    prediction = max(pattern_data['next'], key=pattern_data['next'].get)
-                    total += 1
-                    if prediction == recent_outcomes[i+1]:
-                        correct += 1
-    
-    return correct / total if total > 0 else 0.5
-
-def get_next_prediction():
-    """পরবর্তী স্পিনের জন্য প্রেডিকশন জেনারেট করে"""
-    global global_cache, prediction_model
-    
-    if not global_cache['data'] or len(global_cache['data']) < 10:
-        return {
-            'primary': 'অপর্যাপ্ত ডাটা',
-            'confidence': 0,
-            'alternatives': [],
-            'probabilities': {}
-        }
-    
-    outcomes = []
-    for spin in global_cache['data'][-20:]:  # শেষ ২০ স্পিন
-        outcome = spin.get('data', {}).get('result', {}).get('outcome', {}).get('wheelResult', {})
-        if outcome.get('type') == 'Number':
-            outcomes.append(str(outcome.get('wheelSector', '0')))
-        else:
-            outcomes.append(outcome.get('wheelSector', 'Unknown'))
-    
-    # প্যাটার্ন ম্যাচিং
-    if len(outcomes) >= 3:
-        last_3 = outcomes[-3:]
-        pattern_key = f"{last_3[0]},{last_3[1]},{last_3[2]}"
-        
-        if pattern_key in prediction_model.get('patterns', {}):
-            pattern_data = prediction_model['patterns'][pattern_key]
-            if pattern_data['next']:
-                # সম্ভাবনা অনুযায়ী সাজান
-                total = sum(pattern_data['next'].values())
-                probabilities = {k: v/total for k, v in pattern_data['next'].items()}
-                
-                # সর্টেড প্রেডিকশন
-                sorted_preds = sorted(probabilities.items(), key=lambda x: x[1], reverse=True)
-                
-                if sorted_preds:
-                    return {
-                        'primary': sorted_preds[0][0],
-                        'confidence': sorted_preds[0][1],
-                        'alternatives': [p[0] for p in sorted_preds[1:3]],
-                        'probabilities': probabilities,
-                        'pattern': pattern_key
-                    }
-    
-    # যদি প্যাটার্ন না মেলে, বেস প্রোবেবিলিটি ব্যবহার করুন
-    probs = prediction_model.get('probabilities', {})
-    if probs:
-        sorted_probs = sorted(probs.items(), key=lambda x: x[1], reverse=True)
-        return {
-            'primary': sorted_probs[0][0],
-            'confidence': sorted_probs[0][1],
-            'alternatives': [p[0] for p in sorted_probs[1:3]],
-            'probabilities': probs,
-            'pattern': None
-        }
-    
-    return {
-        'primary': 'অনির্ধারিত',
-        'confidence': 0,
-        'alternatives': [],
-        'probabilities': {}
-    }
-
-# ============= নতুন সংযোজন ৩: /api/crazytime/latest এ limit প্রয়োগ =============
-@app.route('/api/crazytime/latest')
-def proxy_crazytime_latest():
-    """শুধু সর্বশেষ রেজাল্ট আনার জন্য - ৫০,০০০ লিমিট সহ"""
+# ==================== নতুন ডাটা চেক (প্রতি ৫ সেকেন্ড) ====================
+def check_new_data():
+    """প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক করে"""
     try:
         url = f"https://api-cs.casino.org/svc-evolution-game-events/api/crazytime/latest?tableId={TABLE_ID}"
         
@@ -408,68 +217,306 @@ def proxy_crazytime_latest():
             'Referer': 'https://www.casino.org/'
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=5)
         
-        if response.status_code != 200:
-            return jsonify({'error': f'Latest API returned {response.status_code}'}), response.status_code
-        
-        data = response.json()
-        
-        if data and data.get('id'):
-            print(f"📡 লেটেস্ট রেজাল্ট: {data.get('id')}")
+        if response.status_code == 200:
+            new_data = response.json()
             
-            # নতুন ডাটা এলে ক্যাশ আপডেট করুন
-            if global_cache['data']:
-                # চেক করুন নতুন কি না
-                exists = any(item.get('id') == data.get('id') for item in global_cache['data'])
-                if not exists:
-                    global_cache['data'].append(data)
-                    global_cache['data'].sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
+            if new_data and new_data.get('id'):
+                with tracker.lock:
+                    # ডুপ্লিকেট চেক
+                    exists = any(item.get('id') == new_data.get('id') for item in tracker.data)
                     
-                    # ৫০,০০০ লিমিট প্রয়োগ
-                    enforce_storage_limit()
-                    
-                    # ফাইলেই সেভ করুন
-                    save_data_to_file()
-                    
-                    print("🧠 নতুন ডাটা পেয়েছি, প্রেডিকশন মডেল আপডেট করা হচ্ছে...")
-                    update_prediction_model()
-        
-        return jsonify(data), 200
-        
-    except requests.exceptions.Timeout:
-        return jsonify({'error': 'Latest API timeout'}), 504
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Connection error'}), 502
+                    if not exists and new_data.get('data', {}).get('settledAt'):
+                        logger.info(f"🆕 নতুন ডাটা: {new_data.get('id')}")
+                        
+                        tracker.data.append(new_data)
+                        tracker.data.sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
+                        tracker.total_count = len(tracker.data)
+                        tracker.last_id = new_data.get('id')
+                        tracker.last_update = datetime.now()
+                        
+                        # ডাটা সেভ
+                        save_data()
+                        
+                        # AI মডেল আপডেট
+                        if tracker.total_count % 10 == 0:
+                            # প্রতি ১০টি নতুন ডাটায় পূর্ণ ট্রেনিং
+                            threading.Thread(target=train_ai_model).start()
+                        else:
+                            # দ্রুত আপডেট
+                            quick_update_ai(new_data)
+    
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # সাইলেন্ট ফেইল - শুধু ডিবাগে দেখাবে
+        logger.debug(f"নতুন ডাটা চেকে ত্রুটি: {e}")
 
-# ============= নতুন সংযোজন ৪: ফাইল থেকে লোড দিয়ে সার্ভার স্টার্ট =============
-# সার্ভার স্টার্ট হওয়ার সাথে সাথে ডাটা সংগ্রহ শুরু করুন
-print("\n" + "🔥" * 30)
-print("🔥   ক্রেজি টাইম ট্র্যাকার সার্ভার   🔥")
-print("🔥" * 30)
-print("⏳ সার্ভার প্রস্তুত হচ্ছে...")
+# ==================== AI মডেল ট্রেনিং ====================
+def train_ai_model():
+    """সম্পূর্ণ AI মডেল ট্রেনিং"""
+    global ai_model
+    
+    with tracker.lock:
+        if len(tracker.data) < 50:
+            logger.info("⚠️ ট্রেনিংয়ের জন্য পর্যাপ্ত ডাটা নেই")
+            return
+        
+        data_copy = tracker.data.copy()
+    
+    logger.info("🧠 AI মডেল ট্রেনিং শুরু...")
+    
+    try:
+        outcomes = []
+        dealers = []
+        multipliers = []
+        times = []
+        
+        for spin in data_copy:
+            result_data = spin.get('data', {}).get('result', {}).get('outcome', {})
+            wheel = result_data.get('wheelResult', {})
+            
+            # আউটকাম
+            if wheel.get('type') == 'Number':
+                outcome = str(wheel.get('wheelSector', '0'))
+            else:
+                outcome = wheel.get('wheelSector', 'Unknown')
+            outcomes.append(outcome)
+            
+            # ডিলার
+            dealers.append(spin.get('data', {}).get('dealer', {}).get('name', 'Unknown'))
+            
+            # মাল্টিপ্লায়ার
+            multipliers.append(result_data.get('maxMultiplier', 1))
+            
+            # সময়
+            settled = spin.get('data', {}).get('settledAt')
+            if settled:
+                try:
+                    hour = datetime.fromisoformat(settled.replace('Z', '+00:00')).hour
+                    if 6 <= hour < 12: times.append('morning')
+                    elif 12 <= hour < 18: times.append('afternoon')
+                    elif 18 <= hour < 24: times.append('evening')
+                    else: times.append('night')
+                except:
+                    times.append('unknown')
+            else:
+                times.append('unknown')
+        
+        new_model = AIPredictionModel()
+        
+        # ১. মাল্টি-লেভেল মার্কোভ চেইন
+        for level in [1, 2, 3]:
+            markov = {}
+            for i in range(len(outcomes) - level):
+                state = '→'.join(outcomes[i:i+level])
+                next_out = outcomes[i+level]
+                
+                if state not in markov:
+                    markov[state] = {}
+                if next_out not in markov[state]:
+                    markov[state][next_out] = 0
+                markov[state][next_out] += 1
+            
+            # প্রোবেবিলিটি ক্যালকুলেশন
+            for state in markov:
+                total = sum(markov[state].values())
+                if total > 0:
+                    for next_out in markov[state]:
+                        markov[state][next_out] /= total
+            
+            new_model.markov_chain[f'level_{level}'] = markov
+        
+        # ২. ডিলার প্যাটার্ন
+        dealer_stats = {}
+        for i, dealer in enumerate(dealers):
+            if dealer not in dealer_stats:
+                dealer_stats[dealer] = {'total': 0, 'outcomes': {}}
+            dealer_stats[dealer]['total'] += 1
+            dealer_stats[dealer]['outcomes'][outcomes[i]] = \
+                dealer_stats[dealer]['outcomes'].get(outcomes[i], 0) + 1
+        
+        for dealer in dealer_stats:
+            total = dealer_stats[dealer]['total']
+            if total > 0:
+                for out in dealer_stats[dealer]['outcomes']:
+                    dealer_stats[dealer]['outcomes'][out] /= total
+        
+        new_model.dealer_patterns = dealer_stats
+        
+        # ৩. হট/কোল্ড জোন
+        if len(outcomes) >= 50:
+            recent = outcomes[-50:]
+            all_outcomes = set(outcomes)
+            
+            # বেস প্রোবেবিলিটি
+            base_probs = {}
+            for o in all_outcomes:
+                base_probs[o] = outcomes.count(o) / len(outcomes)
+            
+            hot = []
+            cold = []
+            
+            for outcome in all_outcomes:
+                expected = base_probs.get(outcome, 0) * 50
+                actual = recent.count(outcome)
+                
+                if expected > 0:
+                    deviation = (actual - expected) / expected
+                    if deviation > 0.2:
+                        hot.append({'outcome': outcome, 'deviation': deviation, 'actual': actual})
+                    elif deviation < -0.2:
+                        cold.append({'outcome': outcome, 'deviation': deviation, 'actual': actual})
+            
+            hot.sort(key=lambda x: x['deviation'], reverse=True)
+            cold.sort(key=lambda x: x['deviation'])
+            
+            new_model.hot_zones = hot[:5]
+            new_model.cold_zones = cold[:5]
+        
+        # ৪. বেস প্রোবেবিলিটি
+        for outcome in set(outcomes):
+            new_model.probabilities[outcome] = outcomes.count(outcome) / len(outcomes)
+        
+        # ৫. অ্যাকুরেসি ক্যালকুলেশন
+        if len(outcomes) > 100:
+            correct = 0
+            total = 0
+            
+            for i in range(50, len(outcomes) - 10, 10):
+                test_outcomes = outcomes[:i]
+                if test_outcomes:
+                    pred = max(set(test_outcomes[-20:]), key=test_outcomes[-20:].count)
+                    if pred == outcomes[i]:
+                        correct += 1
+                    total += 1
+            
+            new_model.accuracy = correct / total if total > 0 else 0.5
+        
+        new_model.total_spins = len(outcomes)
+        
+        # মডেল সেভ
+        global ai_model
+        ai_model = new_model
+        ai_model.save(MODEL_FILE)
+        
+        logger.info(f"✅ AI মডেল আপডেট: {len(outcomes)} স্পিন, অ্যাকুরেসি: {ai_model.accuracy:.2%}")
+        
+    except Exception as e:
+        logger.error(f"❌ AI ট্রেনিংয়ে ত্রুটি: {e}")
+        import traceback
+        traceback.print_exc()
 
-# ফাইল থেকে ডাটা লোড করার চেষ্টা করুন
-if load_data_from_file():
-    print("📦 ফাইল থেকে ডাটা লোড করা হয়েছে")
-    # ৫০,০০০ লিমিট চেক করুন
-    enforce_storage_limit()
-else:
-    print("⏳ প্রথমবার ডাটা লোড হচ্ছে...")
-    # পটভূমিতে ডাটা সংগ্রহ শুরু
-    thread = threading.Thread(target=fetch_all_crazytime_data)
-    thread.daemon = True
-    thread.start()
+def quick_update_ai(new_data):
+    """দ্রুত আপডেট (শুধু নতুন ডাটা দিয়ে)"""
+    global ai_model
+    
+    try:
+        # এক্সট্রাক্ট ডাটা
+        result_data = new_data.get('data', {}).get('result', {}).get('outcome', {})
+        wheel = result_data.get('wheelResult', {})
+        
+        if wheel.get('type') == 'Number':
+            outcome = str(wheel.get('wheelSector', '0'))
+        else:
+            outcome = wheel.get('wheelSector', 'Unknown')
+        
+        # হট/কোল্ড আপডেট
+        with tracker.lock:
+            if ai_model.hot_zones:
+                for zone in ai_model.hot_zones:
+                    if zone.get('outcome') == outcome:
+                        zone['actual'] = zone.get('actual', 0) + 1
+            
+            ai_model.total_spins += 1
+        
+    except Exception as e:
+        logger.debug(f"দ্রুত আপডেটে ত্রুটি: {e}")
 
-print("📊 সর্বোচ্চ স্টোরেজ: ৫০,০০০ স্পিন")
-print("🌐 ওয়েব সার্ভার চালু হচ্ছে...")
-print("📍 http://localhost:5000 - মূল গ্রিড")
-print("📍 http://localhost:5000/predictions - প্রেডিকশন ড্যাশবোর্ড")
-print("=" * 60)
+# ==================== প্রেডিকশন জেনারেটর ====================
+def get_ensemble_prediction():
+    """AI মডেল থেকে এনসেম্বল প্রেডিকশন"""
+    with tracker.lock:
+        if len(tracker.data) < 20:
+            return {
+                'primary': 'অপর্যাপ্ত ডাটা',
+                'confidence': 0,
+                'alternatives': [],
+                'probabilities': {},
+                'factors': {}
+            }
+        
+        # সর্বশেষ ডাটা
+        last_20 = tracker.data[-20:]
+    
+    outcomes = []
+    for spin in last_20:
+        result_data = spin.get('data', {}).get('result', {}).get('outcome', {})
+        wheel = result_data.get('wheelResult', {})
+        
+        if wheel.get('type') == 'Number':
+            outcomes.append(str(wheel.get('wheelSector', '0')))
+        else:
+            outcomes.append(wheel.get('wheelSector', 'Unknown'))
+    
+    current_outcome = outcomes[-1] if outcomes else None
+    
+    # এনসেম্বল প্রেডিকশন
+    predictions = {}
+    
+    # ১. মার্কোভ
+    if ai_model.markov_chain and current_outcome:
+        level1 = ai_model.markov_chain.get('level_1', {}).get(current_outcome, {})
+        if level1:
+            for out, prob in level1.items():
+                predictions[out] = predictions.get(out, 0) + prob * ai_model.ensemble_weights['markov']
+    
+    # ২. হট জোন
+    for zone in ai_model.hot_zones:
+        if zone.get('deviation', 0) > 0.5:
+            predictions[zone['outcome']] = predictions.get(zone['outcome'], 0) + 0.1 * ai_model.ensemble_weights['hot']
+    
+    # বেস প্রোবেবিলিটি যোগ করুন (যদি কোনো প্রেডিকশন না থাকে)
+    if not predictions and ai_model.probabilities:
+        predictions = ai_model.probabilities.copy()
+    
+    # নরমালাইজ
+    total = sum(predictions.values())
+    if total > 0:
+        for out in predictions:
+            predictions[out] /= total
+    
+    # টপ প্রেডিকশন
+    sorted_preds = sorted(predictions.items(), key=lambda x: x[1], reverse=True)
+    
+    if sorted_preds:
+        primary = sorted_preds[0][0]
+        confidence = sorted_preds[0][1]
+        
+        # অ্যাকুরেসি ফ্যাক্টর
+        confidence = confidence * (0.7 + 0.3 * ai_model.accuracy)
+        
+        return {
+            'primary': primary,
+            'confidence': min(confidence, 0.95),
+            'alternatives': [p[0] for p in sorted_preds[1:4]],
+            'probabilities': predictions,
+            'factors': {
+                'markov': len(level1) if 'level1' in locals() else 0,
+                'hot': len(ai_model.hot_zones)
+            },
+            'accuracy': ai_model.accuracy
+        }
+    
+    return {
+        'primary': 'অনির্ধারিত',
+        'confidence': 0,
+        'alternatives': [],
+        'probabilities': {},
+        'factors': {},
+        'accuracy': ai_model.accuracy
+    }
 
-# ============= আপনার বিদ্যমান রুট =============
+# ==================== API এন্ডপয়েন্ট ====================
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
@@ -479,94 +526,150 @@ def serve_predictions():
     return send_from_directory('.', 'predictions.html')
 
 @app.route('/api/crazytime')
-def proxy_crazytime():
+def get_crazytime_data():
+    """ডাটা রিটার্ন করে"""
     try:
-        page = request.args.get('page', '0')
-        size = request.args.get('size', '100')
+        page = int(request.args.get('page', 0))
+        size = int(request.args.get('size', 100))
         
-        if page == '0' and global_cache['data'] is not None:
-            print(f"📦 ক্যাশ থেকে ডাটা দিচ্ছি (পৃষ্ঠা {page})")
+        with tracker.lock:
+            start = page * size
+            end = start + size
+            data = tracker.data[start:end] if tracker.data else []
+            total = tracker.total_count
             
-            page_size = int(size)
-            total = len(global_cache['data'])
-            
-            start = 0
-            end = min(page_size, total)
-            
-            response_data = global_cache['data'][start:end]
-            
-            flask_response = jsonify(response_data)
-            flask_response.headers['X-Total-Count'] = str(total)
-            return flask_response
-        
-        print(f"🌐 API থেকে ডাটা নিচ্ছি (পৃষ্ঠা {page})")
-        
-        url = f"{API_URL}?page={page}&size={size}&sort=data.settledAt,desc&duration=72&wheelResults=Pachinko,CashHunt,CrazyBonus,CoinFlip,1,2,5,10&isTopSlotMatched=true,false&tableId={TABLE_ID}"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Origin': 'https://www.casino.org',
-            'Referer': 'https://www.casino.org/'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code != 200:
-            return jsonify({'error': f'API returned {response.status_code}'}), response.status_code
-        
-        flask_response = jsonify(response.json())
-        if 'x-total-count' in response.headers:
-            flask_response.headers['X-Total-Count'] = response.headers['x-total-count']
-        
-        return flask_response
-        
-    except requests.exceptions.Timeout:
-        return jsonify({'error': 'API timeout'}), 504
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Connection error'}), 502
+            response = jsonify(data)
+            response.headers['X-Total-Count'] = str(total)
+            return response
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"API ত্রুটি: {e}")
+        return jsonify([]), 200
+
+@app.route('/api/crazytime/latest')
+def get_latest():
+    """সর্বশেষ ডাটা রিটার্ন করে"""
+    with tracker.lock:
+        if tracker.data and len(tracker.data) > 0:
+            return jsonify(tracker.data[-1])
+        return jsonify({})
 
 @app.route('/api/predictions')
 def get_predictions():
-    """প্রেডিকশন ডাটা রিটার্ন করে"""
-    global prediction_model
+    """AI প্রেডিকশন রিটার্ন করে"""
+    prediction = get_ensemble_prediction()
     
-    next_pred = get_next_prediction()
-    
-    response = {
-        'model': prediction_model,
-        'next_prediction': next_pred,
-        'timestamp': datetime.now().isoformat()
-    }
-    
-    return jsonify(response)
-
-@app.route('/api/predictions/update', methods=['POST'])
-def force_update_predictions():
-    """ম্যানুয়ালি প্রেডিকশন আপডেট করে"""
-    update_prediction_model()
-    return jsonify({'status': 'success', 'message': 'প্রেডিকশন মডেল আপডেট করা হয়েছে'})
-
-@app.route('/api/cache/status')
-def cache_status():
-    """ক্যাশের অবস্থা দেখার জন্য"""
     return jsonify({
-        'has_data': global_cache['data'] is not None,
-        'count': len(global_cache['data']) if global_cache['data'] else 0,
-        'timestamp': global_cache['timestamp'].isoformat() if global_cache['timestamp'] else None,
-        'is_loading': global_cache['is_loading'],
-        'last_id': global_cache['last_id']
-    }), 200
-
-@app.route('/api/health')
-def health():
-    return jsonify({
-        'status': 'ok', 
-        'message': 'Server is running',
+        'prediction': prediction,
+        'model': {
+            'total_spins': ai_model.total_spins,
+            'accuracy': ai_model.accuracy,
+            'hot_zones': ai_model.hot_zones,
+            'cold_zones': ai_model.cold_zones
+        },
         'timestamp': datetime.now().isoformat()
     })
 
+@app.route('/api/health')
+def health():
+    """হেলথ চেক"""
+    with tracker.lock:
+        return jsonify({
+            'status': 'ok',
+            'data_count': tracker.total_count,
+            'model_accuracy': ai_model.accuracy,
+            'last_update': tracker.last_update.isoformat() if tracker.last_update else None,
+            'uptime': '24/7',
+            'scheduler_running': len(scheduler.get_jobs()) > 0
+        })
+
+@app.route('/api/stats')
+def stats():
+    """স্ট্যাটিসটিক্স"""
+    with tracker.lock:
+        return jsonify({
+            'total_spins': tracker.total_count,
+            'model_accuracy': ai_model.accuracy,
+            'hot_zones': ai_model.hot_zones,
+            'cold_zones': ai_model.cold_zones,
+            'last_update': tracker.last_update.isoformat() if tracker.last_update else None
+        })
+
+@app.route('/api/force-update', methods=['POST'])
+def force_update():
+    """ফোর্স আপডেট"""
+    try:
+        threading.Thread(target=check_new_data).start()
+        return jsonify({'status': 'success', 'message': 'আপডেট শুরু হয়েছে'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# ==================== সার্ভার স্টার্টআপ ====================
+def start_background_tasks():
+    """ব্যাকগ্রাউন্ড টাস্ক শুরু করে"""
+    
+    # ডাটা লোড
+    load_data()
+    
+    # ৭২ ঘন্টার ডাটা কালেকশন শুরু (যদি না থাকে)
+    if tracker.total_count < 100:
+        logger.info("🔄 ৭২ ঘন্টার ডাটা সংগ্রহ শুরু হচ্ছে...")
+        thread = threading.Thread(target=fetch_72h_data)
+        thread.daemon = True
+        thread.start()
+    else:
+        logger.info(f"📦 {tracker.total_count} টি ডাটা ইতিমধ্যে আছে")
+        
+        # AI মডেল ট্রেন (যদি প্রয়োজন হয়)
+        if ai_model.total_spins < 100 and tracker.total_count >= 100:
+            logger.info("🔄 AI মডেল ট্রেনিং শুরু হচ্ছে...")
+            thread = threading.Thread(target=train_ai_model)
+            thread.daemon = True
+            thread.start()
+    
+    # প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক করার জন্য scheduler
+    scheduler.add_job(
+        func=check_new_data,
+        trigger=IntervalTrigger(seconds=5),
+        id='check_new_data',
+        replace_existing=True
+    )
+    
+    # প্রতি ১০ মিনিটে ডাটা সেভ
+    scheduler.add_job(
+        func=save_data,
+        trigger=IntervalTrigger(seconds=600),
+        id='save_data',
+        replace_existing=True
+    )
+    
+    # প্রতি ঘন্টায় AI মডেল ট্রেন
+    scheduler.add_job(
+        func=train_ai_model,
+        trigger=IntervalTrigger(seconds=3600),
+        id='train_ai_model',
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logger.info("✅ ব্যাকগ্রাউন্ড টাস্ক শুরু হয়েছে")
+    logger.info("⏱️ প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক")
+
 if __name__ == '__main__':
+    print("🔥" * 40)
+    print("🔥   ২৪/৭ ক্রেজি টাইম AI ট্র্যাকার   🔥")
+    print("🔥" * 40)
+    
+    # ব্যাকগ্রাউন্ড টাস্ক শুরু
+    start_background_tasks()
+    
+    # শাটডাউনে ক্লিনআপ
+    atexit.register(lambda: scheduler.shutdown())
+    
+    print(f"📊 বর্তমান ডাটা: {tracker.total_count} টি")
+    print(f"🤖 মডেল অ্যাকুরেসি: {ai_model.accuracy:.2%}")
+    print(f"⏱️  প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক")
+    print(f"🌐 পোর্ট: {os.environ.get('PORT', 5000)}")
+    print("=" * 40)
+    
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
