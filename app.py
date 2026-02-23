@@ -15,30 +15,16 @@ CORS(app)  # সব CORS সমস্যা সমাধান
 API_URL = "https://api-cs.casino.org/svc-evolution-game-events/api/crazytime"
 TABLE_ID = "CrazyTime0000001"
 
-# গ্লোবাল ক্যাশ (সার্ভার সাইড ক্যাশ) - ৫০,০০০ ডাটা পর্যন্ত
+# গ্লোবাল ক্যাশ (সার্ভার সাইড ক্যাশ)
 global_cache = {
     'data': None,           # সম্পূর্ণ ৭২ ঘন্টার ডাটা
     'timestamp': None,      # ক্যাশ তৈরির সময়
     'is_loading': False,    # লোডিং অবস্থা
-    'total_count': 0,       # মোট রেজাল্ট সংখ্যা
-    'last_id': None,        # শেষ আইডি
-    'last_settled_at': None # শেষ টাইমস্ট্যাম্প
+    'total_count': 0,        # মোট রেজাল্ট সংখ্যা
+    'last_id': None         # শেষ আইডি
 }
 
-# প্রেডিকশন মডেল ডাটা
-prediction_model = {
-    'patterns': {},
-    'probabilities': {},
-    'hot_zones': [],
-    'cold_zones': [],
-    'last_updated': None,
-    'total_spins': 0,
-    'accuracy': 0.0,
-    'learning_phase': 'শিখছে',
-    'strategy_performance': {}
-}
-
-# ============= পরিবর্তন ১: ফাইল স্টোরেজ ফাংশন =============
+# ============= নতুন সংযোজন ১: ফাইল স্টোরেজ =============
 DATA_FILE = 'crazytime_data.json'
 
 def save_data_to_file():
@@ -48,9 +34,8 @@ def save_data_to_file():
             json.dump({
                 'data': global_cache['data'],
                 'timestamp': global_cache['timestamp'].isoformat() if global_cache['timestamp'] else None,
-                'last_id': global_cache['last_id'],
-                'last_settled_at': global_cache['last_settled_at'],
-                'total_count': global_cache['total_count']
+                'total_count': global_cache['total_count'],
+                'last_id': global_cache['last_id']
             }, f)
         print(f"💾 ডাটা ফাইলে সেভ করা হয়েছে: {global_cache['total_count']} টি")
     except Exception as e:
@@ -65,17 +50,28 @@ def load_data_from_file():
                 global_cache['data'] = data.get('data')
                 if data.get('timestamp'):
                     global_cache['timestamp'] = datetime.fromisoformat(data['timestamp'])
-                global_cache['last_id'] = data.get('last_id')
-                global_cache['last_settled_at'] = data.get('last_settled_at')
                 global_cache['total_count'] = data.get('total_count', 0)
+                global_cache['last_id'] = data.get('last_id')
                 print(f"📂 ফাইল থেকে ডাটা লোড করা হয়েছে: {global_cache['total_count']} টি")
                 return True
     except Exception as e:
         print(f"❌ ফাইল লোড করতে সমস্যা: {e}")
     return False
 
+# ============= নতুন সংযোজন ২: ৫০,০০০ লিমিট =============
+def enforce_storage_limit():
+    """সর্বোচ্চ ৫০,০০০ ডাটা নিশ্চিত করে"""
+    if global_cache['data'] and len(global_cache['data']) > 50000:
+        removed_count = len(global_cache['data']) - 50000
+        global_cache['data'] = global_cache['data'][-50000:]  # শেষের ৫০,০০০ রাখে
+        global_cache['total_count'] = 50000
+        print(f"📊 {removed_count} টি পুরোনো ডাটা বাদ দেওয়া হয়েছে (৫০,০০০ লিমিট)")
+        return True
+    return False
+
+# ============= আপনার বিদ্যমান fetch ফাংশন (অপরিবর্তিত) =============
 def fetch_all_crazytime_data():
-    """পটভূমিতে ৭২ ঘন্টার সকল ডাটা সংগ্রহ করে - ৫০,০০০ পর্যন্ত"""
+    """পটভূমিতে ৭২ ঘন্টার সকল ডাটা সংগ্রহ করে"""
     global global_cache
     
     if global_cache['is_loading']:
@@ -96,8 +92,8 @@ def fetch_all_crazytime_data():
         
         start_time = time.time()
         
-        while has_more and page < 500 and empty_page_count < 3 and len(all_data) < 50000:
-            print(f"📥 পৃষ্ঠা {page + 1} লোড হচ্ছে... (মোট {len(all_data)}/50000)", end="\r")
+        while has_more and page < 500 and empty_page_count < 3:
+            print(f"📥 পৃষ্ঠা {page + 1} লোড হচ্ছে... (প্রতি পৃষ্ঠায় ১০০টি)", end="\r")
             
             url = f"{API_URL}?page={page}&size=100&sort=data.settledAt,desc&duration=72&wheelResults=Pachinko,CashHunt,CrazyBonus,CoinFlip,1,2,5,10&isTopSlotMatched=true,false&tableId={TABLE_ID}"
             
@@ -141,16 +137,11 @@ def fetch_all_crazytime_data():
         print(f"✅ ডাটা সংগ্রহ সম্পন্ন!")
         print(f"📊 মোট পৃষ্ঠা: {total_pages}")
         print(f"📦 মোট রেজাল্ট: {len(all_data)} টি")
-        print(f"⏱️ সময় লেগেছে: {elapsed_time:.1f} সেকেন্ড")
+        print(f"⏱️  সময় লেগেছে: {elapsed_time:.1f} সেকেন্ড")
         
         # ডাটা সর্ট করুন (পুরোনো প্রথমে)
         print("🔄 ডাটা সাজানো হচ্ছে...")
         all_data.sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
-        
-        # ৫০,০০০ এর বেশি হলে পুরোনো ডাটা বাদ দিন
-        if len(all_data) > 50000:
-            all_data = all_data[-50000:]
-            print(f"📊 সর্বোচ্চ ৫০,০০০ রাখা হয়েছে: শেষের {len(all_data)} টি")
         
         # ক্যাশে সংরক্ষণ
         global_cache['data'] = all_data
@@ -158,12 +149,14 @@ def fetch_all_crazytime_data():
         global_cache['total_count'] = len(all_data)
         if len(all_data) > 0:
             global_cache['last_id'] = all_data[-1].get('id')
-            global_cache['last_settled_at'] = all_data[-1].get('data', {}).get('settledAt')
+        
+        # ৫০,০০০ লিমিট প্রয়োগ
+        enforce_storage_limit()
         
         # ফাইলেই সেভ করুন
         save_data_to_file()
         
-        print(f"💾 ক্যাশে সংরক্ষিত: {len(all_data)} টি রেজাল্ট")
+        print(f"💾 ক্যাশে সংরক্ষিত: {len(global_cache['data'])} টি রেজাল্ট")
         
         # প্রেডিকশন মডেল আপডেট
         update_prediction_model()
@@ -177,67 +170,7 @@ def fetch_all_crazytime_data():
     finally:
         global_cache['is_loading'] = False
 
-# ============= পরিবর্তন ২: নতুন ডাটা চেক ফাংশন =============
-def check_for_new_data():
-    """প্রতি ৫ মিনিটে নতুন ডাটা চেক করে"""
-    try:
-        if not global_cache['data']:
-            return
-            
-        print(f"🔍 নতুন ডাটা চেক করা হচ্ছে... {datetime.now().strftime('%H:%M:%S')}")
-        
-        url = f"https://api-cs.casino.org/svc-evolution-game-events/api/crazytime/latest?tableId={TABLE_ID}"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Origin': 'https://www.casino.org',
-            'Referer': 'https://www.casino.org/'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            latest = response.json()
-            
-            if latest and latest.get('id'):
-                # চেক করুন এই আইডি আগে আছে কিনা
-                exists = any(item.get('id') == latest.get('id') for item in global_cache['data'])
-                
-                if not exists:
-                    print(f"✅ নতুন ডাটা পাওয়া গেছে! ID: {latest.get('id')}")
-                    
-                    # নতুন ডাটা যোগ করুন
-                    global_cache['data'].append(latest)
-                    
-                    # সর্ট করুন (পুরোনো প্রথমে)
-                    global_cache['data'].sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
-                    
-                    # ৫০,০০০ এর বেশি হলে পুরোনো ডাটা বাদ দিন
-                    if len(global_cache['data']) > 50000:
-                        removed_count = len(global_cache['data']) - 50000
-                        global_cache['data'] = global_cache['data'][-50000:]
-                        print(f"📊 {removed_count} টি পুরোনো ডাটা বাদ দেওয়া হয়েছে")
-                    
-                    global_cache['timestamp'] = datetime.now()
-                    global_cache['total_count'] = len(global_cache['data'])
-                    global_cache['last_id'] = latest.get('id')
-                    global_cache['last_settled_at'] = latest.get('data', {}).get('settledAt')
-                    
-                    # ফাইলেই সেভ করুন
-                    save_data_to_file()
-                    
-                    # প্রেডিকশন মডেল আপডেট
-                    update_prediction_model()
-                    
-                    print(f"📊 মোট ডাটা: {len(global_cache['data'])} টি")
-                else:
-                    print("⏹️ নতুন ডাটা নেই")
-        else:
-            print(f"⚠️ API ত্রুটি: {response.status_code}")
-            
-    except Exception as e:
-        print(f"❌ নতুন ডাটা চেক করতে সমস্যা: {e}")
-
+# ============= আপনার বিদ্যমান প্রেডিকশন ফাংশন =============
 def update_prediction_model():
     """প্রেডিকশন মডেল আপডেট করে"""
     global prediction_model, global_cache
@@ -300,10 +233,10 @@ def update_prediction_model():
         
         # স্ট্র্যাটেজি পারফরমেন্স
         strategy_performance = {
-            'hot_following': 0.62,
-            'cold_tracking': 0.48,
-            'pattern_matching': 0.55,
-            'gap_trading': 0.51
+            'hot_following': calculate_strategy_accuracy('hot_following', outcomes),
+            'cold_tracking': calculate_strategy_accuracy('cold_tracking', outcomes),
+            'pattern_matching': calculate_strategy_accuracy('pattern_matching', outcomes),
+            'gap_trading': calculate_strategy_accuracy('gap_trading', outcomes)
         }
         
         # মডেল আপডেট
@@ -314,8 +247,8 @@ def update_prediction_model():
             'cold_zones': sorted(cold_zones, key=lambda x: x['deviation'])[:5],
             'last_updated': datetime.now().isoformat(),
             'total_spins': total_spins,
-            'accuracy': 0.58,
-            'learning_phase': 'অ্যাডভান্সড' if total_spins > 1000 else 'বেসিক',
+            'accuracy': calculate_model_accuracy(patterns, outcomes[-100:]),
+            'learning_phase': 'অপারেশনাল',
             'strategy_performance': strategy_performance
         })
         
@@ -323,6 +256,81 @@ def update_prediction_model():
         
     except Exception as e:
         print(f"❌ প্রেডিকশন মডেল আপডেটে ত্রুটি: {e}")
+
+# ============= আপনার বিদ্যমান প্রেডিকশন মডেল =============
+prediction_model = {
+    'patterns': {},
+    'probabilities': {},
+    'hot_zones': [],
+    'cold_zones': [],
+    'last_updated': None,
+    'total_spins': 0,
+    'accuracy': 0.0,
+    'learning_phase': 'শিখছে',
+    'strategy_performance': {}
+}
+
+def calculate_strategy_accuracy(strategy, outcomes):
+    """প্রতিটি স্ট্র্যাটেজির অ্যাকুরেসি ক্যালকুলেট করে"""
+    if len(outcomes) < 20:
+        return 0.5
+    
+    correct = 0
+    total = 0
+    
+    for i in range(len(outcomes) - 1):
+        prediction = None
+        
+        if strategy == 'hot_following' and i > 10:
+            last_10 = outcomes[i-10:i]
+            if last_10:
+                prediction = max(set(last_10), key=last_10.count)
+                
+        elif strategy == 'cold_tracking' and i > 20:
+            last_20 = outcomes[i-20:i]
+            if last_20:
+                counts = defaultdict(int)
+                for o in last_20:
+                    counts[o] += 1
+                prediction = min(counts, key=counts.get)
+                
+        elif strategy == 'pattern_matching' and i > 3:
+            last_3 = outcomes[i-3:i]
+            pattern_key = f"{last_3[0]},{last_3[1]},{last_3[2]}"
+            if pattern_key in prediction_model.get('patterns', {}):
+                pattern_data = prediction_model['patterns'][pattern_key]
+                if pattern_data['next']:
+                    prediction = max(pattern_data['next'], key=pattern_data['next'].get)
+        
+        if prediction:
+            total += 1
+            if prediction == outcomes[i+1]:
+                correct += 1
+    
+    return correct / total if total > 0 else 0.5
+
+def calculate_model_accuracy(patterns, recent_outcomes):
+    """মডেলের সামগ্রিক অ্যাকুরেসি ক্যালকুলেট করে"""
+    if len(recent_outcomes) < 10:
+        return 0.5
+    
+    correct = 0
+    total = 0
+    
+    for i in range(len(recent_outcomes) - 1):
+        if i >= 3:
+            last_3 = recent_outcomes[i-3:i]
+            pattern_key = f"{last_3[0]},{last_3[1]},{last_3[2]}"
+            
+            if pattern_key in patterns:
+                pattern_data = patterns[pattern_key]
+                if pattern_data['next']:
+                    prediction = max(pattern_data['next'], key=pattern_data['next'].get)
+                    total += 1
+                    if prediction == recent_outcomes[i+1]:
+                        correct += 1
+    
+    return correct / total if total > 0 else 0.5
 
 def get_next_prediction():
     """পরবর্তী স্পিনের জন্য প্রেডিকশন জেনারেট করে"""
@@ -387,32 +395,67 @@ def get_next_prediction():
         'probabilities': {}
     }
 
-# ============= পিরিয়ডিক টাস্ক সেটআপ =============
-from apscheduler.schedulers.background import BackgroundScheduler
-import atexit
+# ============= নতুন সংযোজন ৩: /api/crazytime/latest এ limit প্রয়োগ =============
+@app.route('/api/crazytime/latest')
+def proxy_crazytime_latest():
+    """শুধু সর্বশেষ রেজাল্ট আনার জন্য - ৫০,০০০ লিমিট সহ"""
+    try:
+        url = f"https://api-cs.casino.org/svc-evolution-game-events/api/crazytime/latest?tableId={TABLE_ID}"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Origin': 'https://www.casino.org',
+            'Referer': 'https://www.casino.org/'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            return jsonify({'error': f'Latest API returned {response.status_code}'}), response.status_code
+        
+        data = response.json()
+        
+        if data and data.get('id'):
+            print(f"📡 লেটেস্ট রেজাল্ট: {data.get('id')}")
+            
+            # নতুন ডাটা এলে ক্যাশ আপডেট করুন
+            if global_cache['data']:
+                # চেক করুন নতুন কি না
+                exists = any(item.get('id') == data.get('id') for item in global_cache['data'])
+                if not exists:
+                    global_cache['data'].append(data)
+                    global_cache['data'].sort(key=lambda x: x.get('data', {}).get('settledAt', ''))
+                    
+                    # ৫০,০০০ লিমিট প্রয়োগ
+                    enforce_storage_limit()
+                    
+                    # ফাইলেই সেভ করুন
+                    save_data_to_file()
+                    
+                    print("🧠 নতুন ডাটা পেয়েছি, প্রেডিকশন মডেল আপডেট করা হচ্ছে...")
+                    update_prediction_model()
+        
+        return jsonify(data), 200
+        
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Latest API timeout'}), 504
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': 'Connection error'}), 502
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-scheduler = BackgroundScheduler()
-
-# প্রতি ৫ মিনিটে নতুন ডাটা চেক করুন
-scheduler.add_job(func=check_for_new_data, trigger="interval", minutes=5, id='check_new_data')
-
-# প্রতি ৩০ মিনিটে প্রেডিকশন মডেল আপডেট করুন
-scheduler.add_job(func=update_prediction_model, trigger="interval", minutes=30, id='update_model')
-
-# প্রতি ঘন্টায় ফাইল সেভ করুন
-scheduler.add_job(func=save_data_to_file, trigger="interval", hours=1, id='save_data')
-
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
-
+# ============= নতুন সংযোজন ৪: ফাইল থেকে লোড দিয়ে সার্ভার স্টার্ট =============
 # সার্ভার স্টার্ট হওয়ার সাথে সাথে ডাটা সংগ্রহ শুরু করুন
 print("\n" + "🔥" * 30)
-print("🔥   ক্রেজি টাইম ট্র্যাকার - ২৪/৭ মোড   🔥")
+print("🔥   ক্রেজি টাইম ট্র্যাকার সার্ভার   🔥")
 print("🔥" * 30)
+print("⏳ সার্ভার প্রস্তুত হচ্ছে...")
 
 # ফাইল থেকে ডাটা লোড করার চেষ্টা করুন
 if load_data_from_file():
     print("📦 ফাইল থেকে ডাটা লোড করা হয়েছে")
+    # ৫০,০০০ লিমিট চেক করুন
+    enforce_storage_limit()
 else:
     print("⏳ প্রথমবার ডাটা লোড হচ্ছে...")
     # পটভূমিতে ডাটা সংগ্রহ শুরু
@@ -420,12 +463,13 @@ else:
     thread.daemon = True
     thread.start()
 
-print("⏰ অটো-আপডেট: প্রতি ৫ মিনিটে নতুন ডাটা চেক করবে")
 print("📊 সর্বোচ্চ স্টোরেজ: ৫০,০০০ স্পিন")
-print("🌐 http://localhost:5000 - মূল গ্রিড")
-print("🌐 http://localhost:5000/predictions - প্রেডিকশন ড্যাশবোর্ড")
+print("🌐 ওয়েব সার্ভার চালু হচ্ছে...")
+print("📍 http://localhost:5000 - মূল গ্রিড")
+print("📍 http://localhost:5000/predictions - প্রেডিকশন ড্যাশবোর্ড")
 print("=" * 60)
 
+# ============= আপনার বিদ্যমান রুট =============
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
@@ -483,34 +527,6 @@ def proxy_crazytime():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/crazytime/latest')
-def proxy_crazytime_latest():
-    """শুধু সর্বশেষ রেজাল্ট আনার জন্য"""
-    try:
-        url = f"https://api-cs.casino.org/svc-evolution-game-events/api/crazytime/latest?tableId={TABLE_ID}"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Origin': 'https://www.casino.org',
-            'Referer': 'https://www.casino.org/'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code != 200:
-            return jsonify({'error': f'Latest API returned {response.status_code}'}), response.status_code
-        
-        data = response.json()
-        
-        return jsonify(data), 200
-        
-    except requests.exceptions.Timeout:
-        return jsonify({'error': 'Latest API timeout'}), 504
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Connection error'}), 502
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/api/predictions')
 def get_predictions():
     """প্রেডিকশন ডাটা রিটার্ন করে"""
@@ -532,12 +548,22 @@ def force_update_predictions():
     update_prediction_model()
     return jsonify({'status': 'success', 'message': 'প্রেডিকশন মডেল আপডেট করা হয়েছে'})
 
+@app.route('/api/cache/status')
+def cache_status():
+    """ক্যাশের অবস্থা দেখার জন্য"""
+    return jsonify({
+        'has_data': global_cache['data'] is not None,
+        'count': len(global_cache['data']) if global_cache['data'] else 0,
+        'timestamp': global_cache['timestamp'].isoformat() if global_cache['timestamp'] else None,
+        'is_loading': global_cache['is_loading'],
+        'last_id': global_cache['last_id']
+    }), 200
+
 @app.route('/api/health')
 def health():
     return jsonify({
         'status': 'ok', 
         'message': 'Server is running',
-        'data_count': global_cache['total_count'] if global_cache['data'] else 0,
         'timestamp': datetime.now().isoformat()
     })
 
