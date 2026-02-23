@@ -2,8 +2,8 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>ক্রেজি টাইম - ২৪/৭ ট্র্যাকার ও প্রেডিকশন</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ক্রেজি টাইম - ২৪/৭ AI গ্রিড ট্র্যাকার</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,6 @@
             background: #0a0a0a;
             color: #fff;
             padding: 20px;
-            min-height: 100vh;
         }
         
         .container {
@@ -31,6 +30,24 @@
             padding: 25px;
             margin-bottom: 25px;
             border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #a855f7, #ec4899, #f97316, #a855f7);
+            animation: glow 3s linear infinite;
+        }
+        
+        @keyframes glow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
         }
         
         .title {
@@ -41,7 +58,7 @@
         .title h1 {
             font-size: 36px;
             background: linear-gradient(135deg, #a855f7, #ec4899, #f97316);
-            -webkit-background-clip: text;
+            -webkit-background: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -75,18 +92,19 @@
             font-size: 16px;
             font-weight: bold;
             text-decoration: none;
-            display: inline-block;
         }
         
         .nav-btn:hover {
             background: #2a2a2a;
             color: white;
+            border-color: #a855f7;
         }
         
         .nav-btn.active {
             background: #7e22ce;
             color: white;
             border-color: #a855f7;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
         }
         
         .stats-container {
@@ -104,6 +122,12 @@
             border: 1px solid #333;
             text-align: center;
             min-width: 180px;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            border-color: #a855f7;
+            transform: translateY(-2px);
         }
         
         .stat-label {
@@ -149,6 +173,14 @@
             border-radius: 20px;
         }
         
+        .ai-status {
+            color: #a855f7;
+            font-size: 12px;
+            background: #4a1d96;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
         /* Controls */
         .controls {
             background: #111;
@@ -175,7 +207,7 @@
             padding: 12px 20px;
             border-radius: 30px;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
         }
         
         .search-box input:focus {
@@ -203,6 +235,7 @@
         .filter-btn:hover {
             background: #2a2a2a;
             color: white;
+            border-color: #a855f7;
         }
         
         .filter-btn.active {
@@ -378,7 +411,32 @@
             opacity: 1;
         }
         
-        /* Action Buttons */
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .quick-stat {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .quick-stat-label {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        
+        .quick-stat-value {
+            color: #a855f7;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
         .action-btn {
             background: #7e22ce;
             color: white;
@@ -402,128 +460,18 @@
             background: #047857;
         }
         
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .header {
-                padding: 15px;
-            }
-            
-            .title h1 {
-                font-size: 24px;
-            }
-            
-            .nav-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .nav-btn {
-                width: 100%;
-                text-align: center;
-                padding: 12px;
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
             }
             
             .stats-container {
-                flex-direction: column;
-                gap: 10px;
+                gap: 15px;
             }
             
             .stat-card {
-                width: 100%;
-                min-width: auto;
-                padding: 12px 20px;
-            }
-            
-            .stat-value {
-                font-size: 24px;
-            }
-            
-            .status-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .controls {
-                flex-direction: column;
-                padding: 15px;
-            }
-            
-            .search-box {
-                width: 100%;
-                min-width: auto;
-            }
-            
-            .filter-buttons {
-                justify-content: center;
-                width: 100%;
-            }
-            
-            .filter-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-            
-            .grid-container {
-                max-height: 60vh;
-                padding: 10px;
-            }
-            
-            .grid-table {
-                font-size: 11px;
-            }
-            
-            .grid-table th {
-                padding: 8px 4px;
-                font-size: 12px;
-            }
-            
-            .grid-table td {
-                padding: 4px 2px;
-            }
-            
-            .result-only {
-                font-size: 12px;
-                padding: 6px 2px;
-            }
-            
-            .cell-details {
-                font-size: 10px;
-                padding: 6px;
-            }
-            
-            .scroll-top {
-                width: 40px;
-                height: 40px;
-                bottom: 15px;
-                right: 15px;
-                font-size: 18px;
-            }
-            
-            .action-btn {
-                width: 100%;
-                text-align: center;
-                margin: 2px 0;
-            }
-        }
-        
-        /* Tablet Responsive */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .title h1 {
-                font-size: 30px;
-            }
-            
-            .grid-container {
-                max-height: 70vh;
-            }
-            
-            .stat-card {
-                min-width: 150px;
-                padding: 12px 20px;
+                min-width: 140px;
+                padding: 10px 20px;
             }
         }
     </style>
@@ -533,20 +481,20 @@
         <!-- Header -->
         <div class="header">
             <div class="title">
-                <h1>🎡 ক্রেজি টাইম - ২৪/৭ ট্র্যাকার</h1>
-                <p>পুরোনো → নতুন (A1 = সবচেয়ে পুরোনো)</p>
+                <h1>🎡 ক্রেজি টাইম - ২৪/৭ AI ট্র্যাকার</h1>
+                <p>পুরোনো → নতুন (A1 = সবচেয়ে পুরোনো) | ২৪/৭ চলমান</p>
                 <div class="direction">⬆️ পুরোনো ডাটা | ⬇️ নতুন ডাটা</div>
             </div>
 
             <!-- নেভিগেশন বাটন -->
             <div class="nav-buttons">
-                <a href="/" class="nav-btn active">📊 মূল গ্রিড</a>
-                <a href="/predictions" class="nav-btn">🎯 অ্যাডভান্সড প্রেডিকশন</a>
+                <a href="/" class="nav-btn active" id="gridBtn">📊 মূল গ্রিড</a>
+                <a href="/predictions" class="nav-btn" id="predictBtn">🎯 AI প্রেডিকশন</a>
             </div>
             
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-label">মোট রেজাল্ট</div>
+                    <div class="stat-label">মোট স্পিন</div>
                     <div class="stat-value" id="totalCount">০</div>
                 </div>
                 <div class="stat-card">
@@ -557,6 +505,10 @@
                     <div class="stat-label">শেষ সেল</div>
                     <div class="stat-value" id="lastCell">A1</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-label">AI অ্যাকুরেসি</div>
+                    <div class="stat-value" id="aiAccuracy">০%</div>
+                </div>
             </div>
         </div>
         
@@ -564,14 +516,15 @@
         <div class="status-bar">
             <span class="update-time" id="updateTime">⏱️ সর্বশেষ আপডেট: --</span>
             <span class="storage-info" id="storageInfo">📦 লোকাল ক্যাশ: --</span>
-            <span class="storage-info" id="modelAccuracy">🎯 মডেল অ্যাকুরেসি: --</span>
-            <button class="action-btn refresh-btn" onclick="refreshFromStorage()">🔄 ক্যাশ রিফ্রেশ</button>
+            <span class="ai-status" id="aiStatus">🧠 AI স্ট্যাটাস: সক্রিয়</span>
+            <span class="ai-status" id="serverStatus">🌐 সার্ভার: ২৪/৭ চলমান</span>
+            <button class="action-btn refresh-btn" onclick="refreshData()">🔄 রিফ্রেশ</button>
         </div>
         
         <!-- Controls -->
         <div class="controls">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 খুঁজুন (ডিলার, CF, CH, CB, PC, 1,2,5,10...)" autocomplete="off">
+                <input type="text" id="searchInput" placeholder="🔍 খুঁজুন (ডিলার, নম্বর, CF, CH, CB, PC...)">
                 <button class="filter-btn" id="clearSearch">✕</button>
             </div>
             
@@ -587,10 +540,10 @@
                 <button class="filter-btn" data-filter="pachinko">📌 PC</button>
             </div>
             
-            <div class="filter-buttons">
+            <div class="filter-buttons" style="margin-left: auto;">
                 <button class="filter-btn export-btn" onclick="exportData()">📥 ফাইল সেভ</button>
                 <button class="filter-btn export-btn" onclick="importData()">📂 ফাইল লোড</button>
-                <button class="filter-btn" onclick="clearStorage()">🗑️ ক্যাশ মুছুন</button>
+                <button class="filter-btn" onclick="clearCache()">🗑️ ক্যাশ মুছুন</button>
             </div>
         </div>
         
@@ -599,6 +552,26 @@
             <span id="status">🔄 ডাটা লোড হচ্ছে...</span>
             <span id="visibleCount">দৃশ্যমান: ০</span>
             <span class="date-range" id="dateRange"></span>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="quick-stats" id="quickStats">
+            <div class="quick-stat">
+                <div class="quick-stat-label">সর্বোচ্চ মাল্টি</div>
+                <div class="quick-stat-value" id="maxMultiplier">--</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">মোস্ট কমন</div>
+                <div class="quick-stat-value" id="mostCommon">--</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">লাইভ ডিলার</div>
+                <div class="quick-stat-value" id="liveDealer">--</div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-label">২৪ঘ অ্যাক্টিভ</div>
+                <div class="quick-stat-value" id="active24h">✅ হ্যাঁ</div>
+            </div>
         </div>
         
         <!-- Grid Container -->
@@ -614,12 +587,6 @@
     <!-- Scroll to Top -->
     <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
     
-    <!-- Loading Spinner -->
-    <div class="loading" id="globalLoadingSpinner" style="display: none;">
-        <div class="spinner"></div>
-        <div>ডাটা লোড হচ্ছে...</div>
-    </div>
-
     <script>
         // ==================== গ্লোবাল ভেরিয়েবল ====================
         const STORAGE_KEY = 'crazyTimeResults';
@@ -629,6 +596,7 @@
         let filteredResults = [];
         let expandedCell = null;
         let lastSettledAt = null;
+        let aiAccuracy = 0;
         
         // ==================== DOM এলিমেন্টস ====================
         const elements = {
@@ -644,10 +612,13 @@
             scrollTop: document.getElementById('scrollTop'),
             storageInfo: document.getElementById('storageInfo'),
             updateTime: document.getElementById('updateTime'),
-            modelAccuracy: document.getElementById('modelAccuracy'),
+            aiAccuracy: document.getElementById('aiAccuracy'),
+            aiStatus: document.getElementById('aiStatus'),
+            maxMultiplier: document.getElementById('maxMultiplier'),
+            mostCommon: document.getElementById('mostCommon'),
+            liveDealer: document.getElementById('liveDealer'),
             loadingMessage: document.getElementById('loadingMessage'),
-            loadingSubMessage: document.getElementById('loadingSubMessage'),
-            globalLoadingSpinner: document.getElementById('globalLoadingSpinner')
+            loadingSubMessage: document.getElementById('loadingSubMessage')
         };
         
         // ==================== স্ক্রল বাটন ====================
@@ -655,185 +626,7 @@
             elements.scrollTop.classList.toggle('visible', window.scrollY > 400);
         });
         
-        // ==================== স্টোরেজ ফাংশন ====================
-        function saveResultsToStorage(results) {
-            try {
-                const dataToSave = {
-                    results: results,
-                    timestamp: new Date().toISOString(),
-                    totalCount: results.length,
-                    lastId: results.length > 0 ? results[results.length - 1]?.id : null,
-                    lastSettledAt: results.length > 0 ? results[results.length - 1]?.data?.settledAt : null
-                };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-                
-                const metaInfo = {
-                    lastUpdate: new Date().toLocaleString('bn-BD'),
-                    count: results.length,
-                    cacheDate: new Date().toLocaleString()
-                };
-                localStorage.setItem(STORAGE_META_KEY, JSON.stringify(metaInfo));
-                
-                updateStorageInfo();
-                return true;
-            } catch (error) {
-                console.error('স্টোরেজে সেভ করতে সমস্যা:', error);
-                return false;
-            }
-        }
-        
-        function loadFromStorage() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (!saved) return [];
-                
-                const parsed = JSON.parse(saved);
-                
-                if (parsed.results && Array.isArray(parsed.results)) {
-                    return parsed.results;
-                } else if (Array.isArray(parsed)) {
-                    return parsed;
-                }
-                return [];
-            } catch (error) {
-                console.error('স্টোরেজ থেকে লোড করতে সমস্যা:', error);
-                return [];
-            }
-        }
-        
-        function updateStorageInfo() {
-            try {
-                const meta = localStorage.getItem(STORAGE_META_KEY);
-                if (meta) {
-                    const data = JSON.parse(meta);
-                    elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${data.count} টি (${data.cacheDate})`;
-                } else {
-                    elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
-                }
-                elements.updateTime.innerHTML = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
-            } catch (error) {
-                elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
-            }
-        }
-        
-        function clearStorage() {
-            if (confirm('সব ক্যাশ ডাটা মুছে ফেলবেন?')) {
-                localStorage.removeItem(STORAGE_KEY);
-                localStorage.removeItem(STORAGE_META_KEY);
-                elements.storageInfo.innerHTML = '📦 লোকাল ক্যাশ: ০ টি';
-                elements.status.innerHTML = '🗑️ ক্যাশ মুছে ফেলা হয়েছে। পৃষ্ঠা রিলোড দিন।';
-                setTimeout(() => location.reload(), 1000);
-            }
-        }
-        
-        // ==================== ডাটা লোড ====================
-        function refreshFromStorage() {
-            elements.globalLoadingSpinner.style.display = 'block';
-            
-            setTimeout(() => {
-                const stored = loadFromStorage();
-                if (stored.length > 0) {
-                    allResults = stored;
-                    filteredResults = [...allResults];
-                    displayGrid();
-                    elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
-                }
-                elements.globalLoadingSpinner.style.display = 'none';
-            }, 300);
-        }
-        
-        async function loadData() {
-            try {
-                const cachedResults = loadFromStorage();
-                
-                if (cachedResults && cachedResults.length > 0) {
-                    console.log('📦 লোকাল ক্যাশ থেকে ডাটা লোড করা হচ্ছে');
-                    allResults = cachedResults;
-                    filteredResults = [...allResults];
-                    lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
-                    
-                    elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
-                    displayGrid();
-                }
-                
-                elements.loadingMessage.innerHTML = 'সার্ভার থেকে ডাটা আনা হচ্ছে...';
-                
-                const response = await fetch('/api/crazytime?page=0&size=5000');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                const totalCount = response.headers.get('X-Total-Count');
-                
-                console.log(`📡 সার্ভার থেকে ${data.length} টি রেজাল্ট আনা হয়েছে (মোট: ${totalCount})`);
-                
-                if (data.length > 0) {
-                    data.sort((a, b) => {
-                        const timeA = new Date(a.data?.settledAt || 0).getTime();
-                        const timeB = new Date(b.data?.settledAt || 0).getTime();
-                        return timeA - timeB;
-                    });
-                    
-                    allResults = data;
-                    filteredResults = [...allResults];
-                    lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
-                    
-                    saveResultsToStorage(allResults);
-                    
-                    elements.status.innerHTML = `✅ সার্ভার থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
-                    displayGrid();
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                elements.status.innerHTML = '❌ ডাটা লোড করতে সমস্যা';
-                
-                if (!allResults.length) {
-                    elements.gridContainer.innerHTML = '<div class="loading">❌ ডাটা লোড করতে সমস্যা<br><small style="color: #f87171;">সার্ভার চালু আছে কিনা চেক করুন</small><br><button onclick="location.reload()" style="background:#7e22ce; color:white; border:none; padding:10px 20px; border-radius:20px; margin-top:15px; cursor:pointer;">পুনরায় চেষ্টা করুন</button></div>';
-                }
-            }
-        }
-        
-        // ==================== নতুন ডাটা চেক ====================
-        async function checkForLatestData() {
-            try {
-                if (!allResults.length) return;
-                
-                const response = await fetch('/api/crazytime/latest');
-                
-                if (!response.ok) return;
-                
-                const latestData = await response.json();
-                
-                const existingById = allResults.find(r => r.id === latestData.id);
-                
-                if (!existingById && latestData.data?.settledAt) {
-                    console.log('✅ নতুন ডাটা পাওয়া গেছে!');
-                    
-                    allResults.push(latestData);
-                    
-                    allResults.sort((a, b) => {
-                        const timeA = new Date(a.data?.settledAt || 0).getTime();
-                        const timeB = new Date(b.data?.settledAt || 0).getTime();
-                        return timeA - timeB;
-                    });
-                    
-                    saveResultsToStorage(allResults);
-                    filteredResults = [...allResults];
-                    
-                    elements.status.innerHTML = `✅ +১ টি নতুন রেজাল্ট যুক্ত হয়েছে (মোট ${allResults.length})`;
-                    
-                    displayGrid();
-                }
-                
-            } catch (error) {
-                // সাইলেন্ট ফেইল
-            }
-        }
-        
-        // ==================== এক্সেল স্টাইল কলাম ====================
+        // ==================== ইউটিলিটি ফাংশন ====================
         function getColumnLetter(num) {
             if (num < 0) return '';
             let letter = '';
@@ -844,7 +637,6 @@
             return letter;
         }
         
-        // ==================== রেজাল্ট ক্লাস ====================
         function getResultClass(result) {
             const outcome = result.data?.result?.outcome || {};
             const wheelResult = outcome.wheelResult || {};
@@ -915,6 +707,190 @@
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
+            });
+        }
+        
+        // ==================== লোকাল স্টোরেজ ফাংশন ====================
+        function saveToStorage() {
+            try {
+                const dataToSave = {
+                    results: allResults,
+                    timestamp: new Date().toISOString(),
+                    totalCount: allResults.length
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+                
+                const metaInfo = {
+                    lastUpdate: new Date().toLocaleString('bn-BD'),
+                    count: allResults.length,
+                    cacheDate: new Date().toLocaleString()
+                };
+                localStorage.setItem(STORAGE_META_KEY, JSON.stringify(metaInfo));
+                
+                updateStorageInfo();
+            } catch (error) {
+                console.error('স্টোরেজে সেভ করতে সমস্যা:', error);
+            }
+        }
+        
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (!saved) return [];
+                
+                const parsed = JSON.parse(saved);
+                
+                if (parsed.results && Array.isArray(parsed.results)) {
+                    return parsed.results;
+                } else if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+                return [];
+            } catch (error) {
+                console.error('স্টোরেজ থেকে লোড করতে সমস্যা:', error);
+                return [];
+            }
+        }
+        
+        function updateStorageInfo() {
+            try {
+                const meta = localStorage.getItem(STORAGE_META_KEY);
+                if (meta) {
+                    const data = JSON.parse(meta);
+                    elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${data.count} টি (${data.cacheDate})`;
+                } else {
+                    elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
+                }
+            } catch (error) {
+                elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
+            }
+        }
+        
+        function clearCache() {
+            if (confirm('সব ক্যাশ ডাটা মুছে ফেলবেন?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                localStorage.removeItem(STORAGE_META_KEY);
+                allResults = [];
+                filteredResults = [];
+                displayGrid();
+                elements.status.innerHTML = '🗑️ ক্যাশ মুছে ফেলা হয়েছে';
+            }
+        }
+        
+        // ==================== API কল ফাংশন ====================
+        async function fetchServerData() {
+            try {
+                elements.loadingMessage.innerHTML = 'সার্ভার থেকে ডাটা আনা হচ্ছে...';
+                
+                const response = await fetch('/api/crazytime?page=0&size=5000');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const totalCount = response.headers.get('X-Total-Count');
+                
+                console.log(`📡 সার্ভার থেকে ${data.length} টি রেজাল্ট আনা হয়েছে`);
+                
+                if (data.length > 0) {
+                    // ডাটা সর্ট (পুরোনো → নতুন)
+                    data.sort((a, b) => {
+                        const timeA = new Date(a.data?.settledAt || 0).getTime();
+                        const timeB = new Date(b.data?.settledAt || 0).getTime();
+                        return timeA - timeB;
+                    });
+                    
+                    allResults = data;
+                    filteredResults = [...allResults];
+                    lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
+                    
+                    saveToStorage();
+                    
+                    elements.status.innerHTML = `✅ সার্ভার থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
+                    
+                    // AI স্ট্যাটাস চেক
+                    fetchAIStatus();
+                    
+                    displayGrid();
+                    updateQuickStats();
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                elements.status.innerHTML = '❌ সার্ভার থেকে ডাটা লোড করতে সমস্যা';
+                
+                // ক্যাশ থেকে লোড
+                const cached = loadFromStorage();
+                if (cached.length > 0) {
+                    allResults = cached;
+                    filteredResults = [...allResults];
+                    displayGrid();
+                    updateQuickStats();
+                    elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
+                }
+            }
+        }
+        
+        async function fetchAIStatus() {
+            try {
+                const response = await fetch('/api/predictions');
+                const data = await response.json();
+                
+                if (data.model && data.model.accuracy) {
+                    aiAccuracy = data.model.accuracy;
+                    elements.aiAccuracy.innerHTML = `${(aiAccuracy * 100).toFixed(1)}%`;
+                }
+                
+                if (data.model && data.model.total_spins) {
+                    elements.aiStatus.innerHTML = `🧠 AI: ${data.model.total_spins} স্পিন শিখেছে`;
+                }
+                
+            } catch (error) {
+                console.error('AI স্ট্যাটাস পেতে সমস্যা:', error);
+            }
+        }
+        
+        async function checkForNewData() {
+            try {
+                const response = await fetch('/api/crazytime/latest');
+                const latestData = await response.json();
+                
+                if (latestData && latestData.id) {
+                    const exists = allResults.some(r => r.id === latestData.id);
+                    
+                    if (!exists && latestData.data?.settledAt) {
+                        console.log('✅ নতুন ডাটা পাওয়া গেছে!');
+                        
+                        allResults.push(latestData);
+                        
+                        // রিসর্ট
+                        allResults.sort((a, b) => {
+                            const timeA = new Date(a.data?.settledAt || 0).getTime();
+                            const timeB = new Date(b.data?.settledAt || 0).getTime();
+                            return timeA - timeB;
+                        });
+                        
+                        saveToStorage();
+                        filteredResults = [...allResults];
+                        
+                        elements.status.innerHTML = `✅ +১ টি নতুন রেজাল্ট (মোট ${allResults.length})`;
+                        
+                        displayGrid();
+                        updateQuickStats();
+                    }
+                }
+            } catch (error) {
+                // সাইলেন্ট ফেইল
+            }
+        }
+        
+        function refreshData() {
+            elements.loadingSpinner.style.display = 'block';
+            fetchServerData().finally(() => {
+                setTimeout(() => {
+                    elements.loadingSpinner.style.display = 'none';
+                }, 500);
             });
         }
         
@@ -1017,7 +993,7 @@
                 <span style="color: #f0abfc;">⬆️ A1 = সবচেয়ে পুরোনো</span> 
                 <span style="margin: 0 15px;">|</span> 
                 <span style="color: #6ee7b7;">⬇️ ${lastColLetter}${lastRowNum} = সবচেয়ে নতুন</span>
-                <span style="margin-left: 15px; color: #fbbf24;">⏱️ প্রতি ৫ সেকেন্ডে আপডেট</span>
+                <span style="margin-left: 15px; color: #fbbf24;">⏱️ প্রতি ৫ সেকেন্ডে আপডেট | ২৪/৭ চলমান</span>
             </div>`;
             
             elements.gridContainer.innerHTML = html;
@@ -1026,7 +1002,6 @@
             if (spinner) spinner.style.display = 'none';
         }
         
-        // ==================== টগল সেল ====================
         window.toggleCell = function(cellId) {
             if (expandedCell === cellId) {
                 expandedCell = null;
@@ -1036,7 +1011,7 @@
             displayGrid();
         };
         
-        // ==================== ফিল্টার ====================
+        // ==================== ফিল্টার ফাংশন ====================
         function applyFilters() {
             const searchTerm = elements.searchInput.value.toLowerCase().trim();
             const activeFilter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
@@ -1089,6 +1064,42 @@
             displayGrid();
         }
         
+        // ==================== কুইক স্ট্যাটস আপডেট ====================
+        function updateQuickStats() {
+            if (allResults.length === 0) return;
+            
+            // সর্বোচ্চ মাল্টিপ্লায়ার
+            let maxMulti = 0;
+            const outcomes = [];
+            const dealers = [];
+            
+            allResults.forEach(r => {
+                const multi = r.data?.result?.outcome?.maxMultiplier || 1;
+                if (multi > maxMulti) maxMulti = multi;
+                
+                const { outcome } = extractOutcomeAndMultiplier(r);
+                outcomes.push(outcome);
+                
+                const dealer = r.data?.dealer?.name;
+                if (dealer) dealers.push(dealer);
+            });
+            
+            elements.maxMultiplier.innerHTML = `x${maxMulti}`;
+            
+            // মোস্ট কমন
+            if (outcomes.length > 0) {
+                const counts = {};
+                outcomes.forEach(o => counts[o] = (counts[o] || 0) + 1);
+                const mostCommon = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                elements.mostCommon.innerHTML = mostCommon;
+            }
+            
+            // লাইভ ডিলার (সর্বশেষ)
+            if (dealers.length > 0) {
+                elements.liveDealer.innerHTML = dealers[dealers.length - 1];
+            }
+        }
+        
         // ==================== এক্সপোর্ট/ইম্পোর্ট ====================
         window.exportData = function() {
             if (!allResults.length) {
@@ -1134,9 +1145,9 @@
                             lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
                         }
                         
-                        saveResultsToStorage(allResults);
-                        
+                        saveToStorage();
                         displayGrid();
+                        updateQuickStats();
                         
                         elements.status.innerHTML = `📂 ফাইল থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
                         
@@ -1164,25 +1175,28 @@
         });
         
         // ==================== ইনিশিয়ালাইজ ====================
-        updateStorageInfo();
-        loadData();
-        
-        setInterval(() => {
-            if (allResults.length > 0) {
-                checkForLatestData();
+        document.addEventListener('DOMContentLoaded', () => {
+            // ক্যাশ থেকে লোড
+            const cached = loadFromStorage();
+            if (cached.length > 0) {
+                allResults = cached;
+                filteredResults = [...allResults];
+                displayGrid();
+                updateQuickStats();
+                elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
             }
-        }, 5 * 1000);
-        
-        // প্রতি ৫ মিনিটে মডেল অ্যাকুরেসি আপডেট
-        setInterval(async () => {
-            try {
-                const response = await fetch('/api/predictions');
-                const data = await response.json();
-                if (data.model && data.model.accuracy) {
-                    elements.modelAccuracy.innerHTML = `🎯 মডেল অ্যাকুরেসি: ${(data.model.accuracy * 100).toFixed(1)}%`;
-                }
-            } catch (e) {}
-        }, 5 * 60 * 1000);
+            
+            // সার্ভার থেকে ফ্রেশ ডাটা
+            fetchServerData();
+            
+            // প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক
+            setInterval(checkForNewData, 5000);
+            
+            // প্রতি ৩০ সেকেন্ডে টাইম আপডেট
+            setInterval(() => {
+                elements.updateTime.innerHTML = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
+            }, 1000);
+        });
     </script>
 </body>
 </html>
