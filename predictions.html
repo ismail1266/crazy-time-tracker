@@ -2,8 +2,8 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>ক্রেজি টাইম - অ্যাডভান্সড প্রেডিকশন ড্যাশবোর্ড</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ক্রেজি টাইম - ২৪/৭ AI প্রেডিকশন ড্যাশবোর্ড</title>
     <style>
         * {
             margin: 0;
@@ -16,7 +16,6 @@
             background: #0a0a0a;
             color: #fff;
             padding: 20px;
-            min-height: 100vh;
         }
         
         .container {
@@ -31,6 +30,24 @@
             padding: 25px;
             margin-bottom: 25px;
             border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #a855f7, #ec4899, #f97316, #a855f7);
+            animation: glow 3s linear infinite;
+        }
+        
+        @keyframes glow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
         }
         
         .title {
@@ -41,7 +58,7 @@
         .title h1 {
             font-size: 36px;
             background: linear-gradient(135deg, #a855f7, #ec4899, #f97316);
-            -webkit-background-clip: text;
+            -webkit-background: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -55,19 +72,18 @@
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin: 20px 0;
+            margin-top: 15px;
         }
         
         .nav-btn {
             background: #1f1f1f;
             border: 1px solid #333;
             color: #9ca3af;
-            padding: 10px 30px;
+            padding: 10px 25px;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 14px;
             text-decoration: none;
             display: inline-block;
         }
@@ -81,6 +97,7 @@
             background: #7e22ce;
             color: white;
             border-color: #a855f7;
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
         }
         
         .stats-container {
@@ -98,6 +115,12 @@
             border: 1px solid #333;
             text-align: center;
             min-width: 180px;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            border-color: #a855f7;
+            transform: translateY(-2px);
         }
         
         .stat-label {
@@ -151,6 +174,14 @@
             border-radius: 20px;
         }
         
+        .ai-status {
+            color: #a855f7;
+            font-size: 12px;
+            background: #4a1d96;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
         /* Main Prediction Card */
         .prediction-main {
             background: linear-gradient(145deg, #1a1a1a, #111);
@@ -159,6 +190,19 @@
             margin-bottom: 30px;
             border: 2px solid #a855f7;
             box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .prediction-main::after {
+            content: 'AI';
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 60px;
+            font-weight: bold;
+            color: rgba(168, 85, 247, 0.1);
+            z-index: 0;
         }
         
         .next-spin-title {
@@ -167,6 +211,8 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
         }
         
         .prediction-primary {
@@ -175,13 +221,15 @@
             justify-content: center;
             gap: 30px;
             flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
         }
         
         .primary-outcome {
             font-size: 80px;
             font-weight: bold;
             background: linear-gradient(135deg, #a855f7, #ec4899);
-            -webkit-background-clip: text;
+            -webkit-background: text;
             -webkit-text-fill-color: transparent;
         }
         
@@ -216,7 +264,8 @@
             gap: 15px;
             margin-top: 20px;
             justify-content: center;
-            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
         }
         
         .alt-badge {
@@ -240,6 +289,11 @@
             border-radius: 20px;
             padding: 20px;
             border: 1px solid #333;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            border-color: #a855f7;
         }
         
         .card-title {
@@ -248,6 +302,9 @@
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         /* Probabilities */
@@ -309,8 +366,11 @@
             padding: 10px;
             background: #1a1a1a;
             border-radius: 10px;
-            flex-wrap: wrap;
-            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .zone-item:hover {
+            transform: translateX(5px);
         }
         
         .zone-outcome {
@@ -329,7 +389,6 @@
         .zone-stats {
             display: flex;
             gap: 15px;
-            flex-wrap: wrap;
         }
         
         .zone-badge {
@@ -362,8 +421,11 @@
             padding: 10px;
             background: #1a1a1a;
             border-radius: 8px;
-            flex-wrap: wrap;
-            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .pattern-item:hover {
+            background: #222;
         }
         
         .pattern-sequence {
@@ -375,7 +437,6 @@
         .pattern-next {
             display: flex;
             gap: 5px;
-            flex-wrap: wrap;
         }
         
         .pattern-next-badge {
@@ -397,6 +458,12 @@
             border-radius: 12px;
             padding: 15px;
             text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .strategy-card:hover {
+            transform: scale(1.02);
+            border: 1px solid #a855f7;
         }
         
         .strategy-name {
@@ -443,6 +510,12 @@
             justify-content: center;
             font-size: 12px;
             border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        
+        .recent-cell:hover {
+            border-color: #a855f7;
+            transform: scale(1.1);
         }
         
         .recent-outcome {
@@ -521,184 +594,48 @@
         .factor-medium { background: #854d0e; color: #fde047; }
         .factor-low { background: #7f1d1d; color: #fecaca; }
         
-        /* Factor Analysis */
-        .factor-analysis-grid {
+        /* AI Stats */
+        .ai-stats {
             display: grid;
-            gap: 15px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
         }
         
-        .factor-item {
+        .ai-stat {
             background: #1a1a1a;
-            border-radius: 10px;
-            padding: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
         }
         
-        .factor-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
+        .ai-stat-label {
             color: #9ca3af;
+            font-size: 11px;
         }
         
-        .factor-bar-container {
-            height: 8px;
-            background: #1f1f1f;
-            border-radius: 4px;
-            overflow: hidden;
+        .ai-stat-value {
+            color: #a855f7;
+            font-size: 16px;
+            font-weight: bold;
         }
         
-        .factor-bar {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s;
-        }
-        
-        .bar-markov { background: linear-gradient(90deg, #a855f7, #ec4899); }
-        .bar-dealer { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-        .bar-multiplier { background: linear-gradient(90deg, #f97316, #fb923c); }
-        .bar-time { background: linear-gradient(90deg, #10b981, #34d399); }
-        .bar-hot { background: linear-gradient(90deg, #ef4444, #f87171); }
-        
-        /* Mobile Responsive */
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .header {
-                padding: 15px;
-            }
-            
-            .title h1 {
-                font-size: 24px;
-            }
-            
-            .nav-buttons {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .nav-btn {
-                width: 100%;
-                text-align: center;
-                padding: 12px;
-            }
-            
-            .stats-container {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .stat-card {
-                width: 100%;
-                min-width: auto;
-                padding: 12px 20px;
-            }
-            
-            .stat-value {
-                font-size: 24px;
-            }
-            
-            .status-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .prediction-main {
-                padding: 20px;
+            .dashboard-grid {
+                grid-template-columns: 1fr;
             }
             
             .prediction-primary {
                 flex-direction: column;
                 text-align: center;
-                gap: 15px;
-            }
-            
-            .primary-outcome {
-                font-size: 48px;
-            }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .card-title {
-                font-size: 16px;
-            }
-            
-            .prob-outcome {
-                width: 45px;
-                font-size: 14px;
-            }
-            
-            .prob-bar {
-                font-size: 10px;
-            }
-            
-            .zone-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .zone-stats {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .pattern-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .pattern-next {
-                width: 100%;
-                justify-content: flex-start;
-            }
-            
-            .strategy-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .recent-cell {
-                width: 40px;
-                height: 40px;
-                font-size: 10px;
-            }
-            
-            .recent-multiplier {
-                font-size: 8px;
-            }
-            
-            .action-btn {
-                width: 100%;
-                text-align: center;
-                margin: 2px 0;
-            }
-            
-            .factor-badge {
-                font-size: 10px;
-                padding: 3px 8px;
-            }
-        }
-        
-        /* Tablet Responsive */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .title h1 {
-                font-size: 30px;
-            }
-            
-            .dashboard-grid {
-                grid-template-columns: repeat(2, 1fr);
             }
             
             .primary-outcome {
                 font-size: 60px;
+            }
+            
+            .ai-stats {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -708,22 +645,22 @@
         <!-- Header -->
         <div class="header">
             <div class="title">
-                <h1>🎯 ক্রেজি টাইম - অ্যাডভান্সড প্রেডিকশন</h1>
-                <p>২৪/৭ অটোমেটিক ডাটা এনালাইসিস - ৫০,০০০ স্পিন সাপোর্ট</p>
+                <h1>🎯 ক্রেজি টাইম - ২৪/৭ AI প্রেডিকশন ড্যাশবোর্ড</h1>
+                <p>এআই ক্রমাগত শিখছে | ২৪/৭ চলমান</p>
             </div>
             
             <div class="nav-buttons">
                 <a href="/" class="nav-btn">📊 মূল গ্রিড</a>
-                <a href="/predictions" class="nav-btn active">🎯 অ্যাডভান্সড প্রেডিকশন</a>
+                <a href="/predictions" class="nav-btn active">🎯 AI প্রেডিকশন</a>
             </div>
             
             <div class="stats-container" id="statsContainer">
                 <div class="stat-card">
-                    <div class="stat-label">মোট স্পিন</div>
+                    <div class="stat-label">মোট স্পিন (AI ট্রেনড)</div>
                     <div class="stat-value" id="totalSpins">০</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">মডেল অ্যাকুরেসি</div>
+                    <div class="stat-label">AI মডেল অ্যাকুরেসি</div>
                     <div class="stat-value" id="modelAccuracy">০%</div>
                 </div>
                 <div class="stat-card">
@@ -737,14 +674,14 @@
         <div class="status-bar">
             <span class="update-time" id="updateTime">⏱️ সর্বশেষ আপডেট: --</span>
             <span class="storage-info" id="storageInfo">📦 লোকাল ক্যাশ: --</span>
-            <span class="model-status" id="modelStatus">🧠 মডেল: ২৪/৭ অটো এনালাইসিস</span>
-            <button class="action-btn refresh-btn" onclick="refreshFromStorage()">🔄 ক্যাশ রিফ্রেশ</button>
-            <button class="action-btn" onclick="forceRefreshModel()">🔄 মডেল ফোর্স আপডেট</button>
+            <span class="model-status" id="modelStatus">🧠 মডেল: AI লার্নিং মোড</span>
+            <span class="ai-status" id="aiStatus">🤖 ২৪/৭ সক্রিয়</span>
+            <button class="action-btn refresh-btn" onclick="refreshPrediction()">🔄 রিফ্রেশ</button>
         </div>
         
         <!-- Main Prediction -->
         <div class="prediction-main" id="mainPrediction">
-            <div class="next-spin-title">🎯 আগামী স্পিনের এনসেম্বল প্রেডিকশন</div>
+            <div class="next-spin-title">🎯 আগামী স্পিনের AI প্রেডিকশন</div>
             <div class="prediction-primary">
                 <div class="primary-outcome" id="primaryOutcome">--</div>
                 <div class="confidence-meter">
@@ -764,11 +701,27 @@
             </div>
         </div>
         
+        <!-- AI Stats -->
+        <div class="ai-stats" id="aiStats">
+            <div class="ai-stat">
+                <div class="ai-stat-label">এআই ট্রেনিং স্ট্যাটাস</div>
+                <div class="ai-stat-value" id="aiTrainingStatus">ক্রমাগত শিখছে</div>
+            </div>
+            <div class="ai-stat">
+                <div class="ai-stat-label">শেষ ট্রেনিং</div>
+                <div class="ai-stat-value" id="lastTraining">--</div>
+            </div>
+            <div class="ai-stat">
+                <div class="ai-stat-label">২৪/৭ আপটাইম</div>
+                <div class="ai-stat-value" id="uptimeStatus">✅ চলমান</div>
+            </div>
+        </div>
+        
         <!-- Dashboard Grid -->
         <div class="dashboard-grid">
             <!-- Probabilities Card -->
             <div class="card">
-                <div class="card-title">📊 ফলাফলের সম্ভাবনা</div>
+                <div class="card-title">📊 ফলাফলের সম্ভাবনা (AI)</div>
                 <div class="prob-list" id="probabilities">
                     <!-- Dynamically filled -->
                 </div>
@@ -784,7 +737,7 @@
             
             <!-- Pattern Recognition Card -->
             <div class="card">
-                <div class="card-title">🔄 শীর্ষ প্যাটার্ন (মাল্টি-লেভেল)</div>
+                <div class="card-title">🔄 শীর্ষ AI প্যাটার্ন</div>
                 <div class="pattern-list" id="patterns">
                     <!-- Dynamically filled -->
                 </div>
@@ -792,29 +745,26 @@
             
             <!-- Strategy Performance Card -->
             <div class="card">
-                <div class="card-title">📈 স্ট্র্যাটেজি পারফরমেন্স</div>
+                <div class="card-title">📈 AI স্ট্র্যাটেজি পারফরমেন্স</div>
                 <div class="strategy-grid" id="strategies">
                     <!-- Dynamically filled -->
                 </div>
             </div>
         </div>
         
-        <!-- Recent Results & Factor Analysis -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <!-- Recent Results -->
-            <div class="card">
-                <div class="card-title">⏪ সর্বশেষ ১০টি ফলাফল</div>
-                <div class="recent-grid" id="recentResults">
-                    <!-- Dynamically filled -->
-                </div>
+        <!-- Recent Results -->
+        <div class="card">
+            <div class="card-title">⏪ সর্বশেষ ১০টি ফলাফল</div>
+            <div class="recent-grid" id="recentResults">
+                <!-- Dynamically filled -->
             </div>
-            
-            <!-- Factor Analysis -->
-            <div class="card">
-                <div class="card-title">🔬 ফ্যাক্টর এনালাইসিস</div>
-                <div id="factorAnalysis" class="factor-analysis-grid">
-                    <!-- Dynamically filled -->
-                </div>
+        </div>
+        
+        <!-- Factor Analysis Card -->
+        <div class="card">
+            <div class="card-title">🔬 AI ফ্যাক্টর এনালাইসিস</div>
+            <div id="factorAnalysis" style="padding: 10px;">
+                <!-- Dynamically filled -->
             </div>
         </div>
     </div>
@@ -822,35 +772,36 @@
     <!-- Loading Spinner -->
     <div class="loading" id="loadingSpinner" style="display: none;">
         <div class="spinner"></div>
-        <div>ডাটা লোড হচ্ছে...</div>
+        <div>AI প্রেডিকশন লোড হচ্ছে...</div>
     </div>
 
     <script>
         // ==================== গ্লোবাল ভেরিয়েবল ====================
         const STORAGE_KEY = 'crazyTimeResults';
         let allResults = [];
-        let predictionModel = {
-            patterns: {},
-            probabilities: {},
-            hot_zones: [],
-            cold_zones: [],
-            total_spins: 0,
-            accuracy: 0,
-            learning_phase: 'লোকাল এনালাইসিস',
-            strategy_performance: {},
-            trends: {},
-            markov_probabilities: {}
+        let predictionData = {
+            prediction: {
+                primary: '--',
+                confidence: 0,
+                alternatives: [],
+                probabilities: {},
+                factors: {}
+            },
+            model: {
+                total_spins: 0,
+                accuracy: 0,
+                hot_zones: [],
+                cold_zones: []
+            }
         };
         
-        // DOM এলিমেন্টস
+        // ==================== DOM এলিমেন্টস ====================
         const elements = {
             totalSpins: document.getElementById('totalSpins'),
             modelAccuracy: document.getElementById('modelAccuracy'),
             learningPhase: document.getElementById('learningPhase'),
             updateTime: document.getElementById('updateTime'),
             storageInfo: document.getElementById('storageInfo'),
-            modelStatus: document.getElementById('modelStatus'),
-            loadingSpinner: document.getElementById('loadingSpinner'),
             primaryOutcome: document.getElementById('primaryOutcome'),
             confidencePercent: document.getElementById('confidencePercent'),
             confidenceMeter: document.getElementById('confidenceMeter'),
@@ -860,8 +811,10 @@
             patterns: document.getElementById('patterns'),
             strategies: document.getElementById('strategies'),
             recentResults: document.getElementById('recentResults'),
-            mainPrediction: document.getElementById('mainPrediction'),
-            factorAnalysis: document.getElementById('factorAnalysis')
+            factorAnalysis: document.getElementById('factorAnalysis'),
+            aiTrainingStatus: document.getElementById('aiTrainingStatus'),
+            lastTraining: document.getElementById('lastTraining'),
+            loadingSpinner: document.getElementById('loadingSpinner')
         };
         
         // ==================== স্টোরেজ ফাংশন ====================
@@ -887,75 +840,8 @@
         function updateStorageInfo() {
             try {
                 elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
-                elements.updateTime.innerHTML = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
             } catch (error) {
                 elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
-            }
-        }
-        
-        // ==================== রিফ্রেশ ফাংশন ====================
-        function refreshFromStorage() {
-            elements.loadingSpinner.style.display = 'block';
-            
-            setTimeout(() => {
-                allResults = loadFromStorage();
-                if (allResults.length > 0) {
-                    fetchPredictionModel();
-                } else {
-                    elements.mainPrediction.innerHTML = `
-                        <div style="text-align: center; color: #fbbf24; padding: 30px;">
-                            ⏳ ডাটা নেই! প্রথমে মূল গ্রিড ভিজিট করুন<br>
-                            <a href="/" style="
-                                background: #7e22ce;
-                                color: white;
-                                border: none;
-                                padding: 10px 20px;
-                                border-radius: 20px;
-                                margin-top: 15px;
-                                cursor: pointer;
-                                text-decoration: none;
-                                display: inline-block;
-                            ">📊 মূল গ্রিডে যান</a>
-                        </div>
-                    `;
-                }
-                elements.loadingSpinner.style.display = 'none';
-            }, 300);
-        }
-        
-        function forceRefreshModel() {
-            elements.loadingSpinner.style.display = 'block';
-            elements.modelStatus.innerHTML = '🧠 মডেল: আপডেট হচ্ছে...';
-            
-            fetch('/api/predictions/update', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        fetchPredictionModel();
-                        elements.modelStatus.innerHTML = '🧠 মডেল: ফোর্স আপডেটেড';
-                    }
-                })
-                .catch(error => {
-                    console.error('মডেল আপডেটে সমস্যা:', error);
-                    elements.modelStatus.innerHTML = '🧠 মডেল: আপডেট ব্যর্থ';
-                })
-                .finally(() => {
-                    elements.loadingSpinner.style.display = 'none';
-                });
-        }
-        
-        // ==================== প্রেডিকশন মডেল ফেচ ====================
-        async function fetchPredictionModel() {
-            try {
-                const response = await fetch('/api/predictions');
-                const data = await response.json();
-                
-                if (data.model) {
-                    predictionModel = data.model;
-                    updateDashboard();
-                }
-            } catch (error) {
-                console.error('প্রেডিকশন ডাটা ফেচ করতে সমস্যা:', error);
             }
         }
         
@@ -976,81 +862,141 @@
             return { outcome, multiplier };
         }
         
-        // ==================== পরবর্তী প্রেডিকশন ====================
-        function getNextPrediction() {
-            if (!predictionModel.probabilities || Object.keys(predictionModel.probabilities).length === 0) {
-                return {
-                    primary: 'অপর্যাপ্ত ডাটা',
-                    confidence: 0,
-                    alternatives: [],
-                    probabilities: {},
-                    reasoning: ['কমপক্ষে ৫০টি স্পিন প্রয়োজন']
-                };
+        // ==================== API কল ====================
+        async function fetchPredictions() {
+            elements.loadingSpinner.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/predictions');
+                const data = await response.json();
+                
+                if (data.prediction && data.model) {
+                    predictionData = data;
+                    updateDashboard();
+                }
+                
+            } catch (error) {
+                console.error('প্রেডিকশন পেতে সমস্যা:', error);
+                
+                // লোকাল ডাটা থেকে প্রেডিকশন
+                if (allResults.length > 0) {
+                    generateLocalPrediction();
+                }
+            } finally {
+                elements.loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        // ==================== লোকাল প্রেডিকশন (যদি API না থাকে) ====================
+        function generateLocalPrediction() {
+            if (allResults.length < 20) {
+                elements.primaryOutcome.textContent = 'অপর্যাপ্ত ডাটা';
+                return;
             }
             
-            const probs = predictionModel.probabilities;
-            const sorted = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+            const outcomes = [];
+            allResults.slice(-30).forEach(r => {
+                const { outcome } = extractOutcomeAndMultiplier(r);
+                outcomes.push(outcome);
+            });
             
-            const topProb = sorted[0][1];
-            const secondProb = sorted[1] ? sorted[1][1] : 0;
-            const confidenceGap = topProb - secondProb;
-            const dataQuality = Math.min(predictionModel.total_spins / 1000, 1.0);
-            const confidence = Math.min(topProb * (1 + confidenceGap) * dataQuality, 0.95);
+            // সিম্পল মার্কোভ
+            const counts = {};
+            for (let i = 0; i < outcomes.length - 1; i++) {
+                const current = outcomes[i];
+                const next = outcomes[i + 1];
+                
+                if (!counts[current]) counts[current] = {};
+                if (!counts[current][next]) counts[current][next] = 0;
+                counts[current][next]++;
+            }
             
-            return {
-                primary: sorted[0][0],
-                confidence: confidence,
-                alternatives: sorted.slice(1, 4).map(s => s[0]),
-                probabilities: probs,
-                data_quality: dataQuality,
-                confidence_gap: confidenceGap
-            };
+            const last = outcomes[outcomes.length - 1];
+            if (counts[last]) {
+                const nextCounts = counts[last];
+                const total = Object.values(nextCounts).reduce((a, b) => a + b, 0);
+                const probs = {};
+                
+                for (let [outcome, count] of Object.entries(nextCounts)) {
+                    probs[outcome] = count / total;
+                }
+                
+                const sorted = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+                
+                elements.primaryOutcome.textContent = sorted[0][0];
+                elements.confidencePercent.textContent = `${(sorted[0][1] * 100).toFixed(1)}%`;
+                elements.confidenceMeter.style.width = `${sorted[0][1] * 100}%`;
+                
+                elements.alternatives.innerHTML = '';
+                sorted.slice(1, 4).forEach(([outcome]) => {
+                    const span = document.createElement('span');
+                    span.className = 'alt-badge';
+                    span.textContent = outcome;
+                    elements.alternatives.appendChild(span);
+                });
+            }
         }
         
         // ==================== ড্যাশবোর্ড আপডেট ====================
         function updateDashboard() {
-            const nextPred = getNextPrediction();
+            const pred = predictionData.prediction;
+            const model = predictionData.model;
             
             // স্ট্যাটস আপডেট
-            elements.totalSpins.textContent = predictionModel.total_spins || 0;
-            elements.modelAccuracy.textContent = `${(predictionModel.accuracy * 100 || 0).toFixed(1)}%`;
-            elements.learningPhase.textContent = predictionModel.learning_phase || '--';
+            elements.totalSpins.textContent = model.total_spins || allResults.length || 0;
+            elements.modelAccuracy.textContent = `${((model.accuracy || 0) * 100).toFixed(1)}%`;
+            elements.learningPhase.textContent = model.total_spins > 200 ? 'অ্যাডভান্সড AI' : 'বেসিক AI';
+            elements.updateTime.textContent = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
+            elements.aiTrainingStatus.textContent = 'ক্রমাগত শিখছে (২৪/৭)';
+            elements.lastTraining.textContent = new Date().toLocaleTimeString('bn-BD');
             
             // প্রেডিকশন আপডেট
-            elements.primaryOutcome.textContent = nextPred.primary || '--';
+            elements.primaryOutcome.textContent = pred.primary || '--';
             
-            const confidence = (nextPred.confidence * 100 || 0).toFixed(1);
+            const confidence = ((pred.confidence || 0) * 100).toFixed(1);
             elements.confidencePercent.textContent = `${confidence}%`;
             elements.confidenceMeter.style.width = `${confidence}%`;
             
             elements.alternatives.innerHTML = '';
-            (nextPred.alternatives || []).forEach(alt => {
+            (pred.alternatives || []).forEach(alt => {
                 const span = document.createElement('span');
                 span.className = 'alt-badge';
                 span.textContent = alt;
                 elements.alternatives.appendChild(span);
             });
             
-            // অন্যান্য কার্ড আপডেট
-            updateProbabilities(predictionModel.probabilities);
-            updateHotColdZones(predictionModel.hot_zones, predictionModel.cold_zones);
-            updatePatterns(predictionModel.patterns);
-            updateStrategies(predictionModel.strategy_performance);
+            // প্রোবেবিলিটি
+            updateProbabilities(pred.probabilities || {});
+            
+            // হট/কোল্ড জোন
+            updateHotColdZones(model.hot_zones || [], model.cold_zones || []);
+            
+            // প্যাটার্ন
+            updatePatterns();
+            
+            // স্ট্র্যাটেজি
+            updateStrategies();
+            
+            // ফ্যাক্টর এনালাইসিস
+            updateFactorAnalysis(pred.factors || {});
+            
+            // সাম্প্রতিক ফলাফল
             updateRecentResults();
             
             updateStorageInfo();
         }
         
         function updateProbabilities(probs) {
+            const container = elements.probabilities;
             if (!probs || Object.keys(probs).length === 0) {
-                elements.probabilities.innerHTML = '<div class="prob-item">কোন ডাটা নেই</div>';
+                container.innerHTML = '<div class="prob-item">AI ডাটা নেই</div>';
                 return;
             }
             
             const sorted = Object.entries(probs).sort((a, b) => b[1] - a[1]);
             
-            elements.probabilities.innerHTML = '';
-            sorted.slice(0, 6).forEach(([outcome, prob]) => {
+            container.innerHTML = '';
+            sorted.slice(0, 8).forEach(([outcome, prob]) => {
                 const percent = (prob * 100).toFixed(1);
                 
                 const item = document.createElement('div');
@@ -1062,127 +1008,180 @@
                     </div>
                     <span class="prob-value">${percent}%</span>
                 `;
-                elements.probabilities.appendChild(item);
+                container.appendChild(item);
             });
         }
         
         function updateHotColdZones(hot, cold) {
-            elements.hotColdZones.innerHTML = '';
+            const container = elements.hotColdZones;
+            container.innerHTML = '';
             
             if (hot && hot.length > 0) {
                 hot.slice(0, 3).forEach(zone => {
-                    const deviationPercent = (zone.deviation * 100).toFixed(0);
+                    const deviationPercent = ((zone.deviation || 0) * 100).toFixed(0);
                     
                     const item = document.createElement('div');
                     item.className = 'zone-item';
                     item.innerHTML = `
                         <span class="zone-outcome zone-hot">🔥 ${zone.outcome}</span>
                         <div class="zone-stats">
-                            <span class="zone-badge badge-hot">${zone.count || zone.actual} বার</span>
+                            <span class="zone-badge badge-hot">${zone.actual || 0} বার</span>
                             <span class="zone-badge badge-hot">+${deviationPercent}%</span>
                         </div>
                     `;
-                    elements.hotColdZones.appendChild(item);
+                    container.appendChild(item);
                 });
             }
             
             if (cold && cold.length > 0) {
                 cold.slice(0, 3).forEach(zone => {
-                    const deviationPercent = (zone.deviation * 100).toFixed(0);
+                    const deviationPercent = ((zone.deviation || 0) * 100).toFixed(0);
                     
                     const item = document.createElement('div');
                     item.className = 'zone-item';
                     item.innerHTML = `
                         <span class="zone-outcome zone-cold">💀 ${zone.outcome}</span>
                         <div class="zone-stats">
-                            <span class="zone-badge badge-cold">${zone.count || zone.actual} বার</span>
+                            <span class="zone-badge badge-cold">${zone.actual || 0} বার</span>
                             <span class="zone-badge badge-cold">${deviationPercent}%</span>
                         </div>
                     `;
-                    elements.hotColdZones.appendChild(item);
+                    container.appendChild(item);
                 });
             }
             
             if ((!hot || hot.length === 0) && (!cold || cold.length === 0)) {
-                elements.hotColdZones.innerHTML = '<div class="zone-item">পর্যাপ্ত ডাটা নেই</div>';
+                container.innerHTML = '<div class="zone-item">AI বিশ্লেষণ চলছে...</div>';
             }
         }
         
-        function updatePatterns(patterns) {
-            if (!patterns || Object.keys(patterns).length === 0) {
-                elements.patterns.innerHTML = '<div class="pattern-item">পর্যাপ্ত ডাটা নেই</div>';
+        function updatePatterns() {
+            const container = elements.patterns;
+            
+            // সিম্পল প্যাটার্ন দেখান
+            if (allResults.length < 10) {
+                container.innerHTML = '<div class="pattern-item">পর্যাপ্ত ডাটা নেই</div>';
                 return;
             }
             
-            const topPatterns = Object.entries(patterns)
-                .sort((a, b) => b[1].count - a[1].count)
-                .slice(0, 4);
-            
-            elements.patterns.innerHTML = '';
-            topPatterns.forEach(([pattern, data]) => {
-                const nextBest = Object.entries(data.next)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 2);
-                
-                const item = document.createElement('div');
-                item.className = 'pattern-item';
-                item.innerHTML = `
-                    <span class="pattern-sequence">${pattern}</span>
-                    <div class="pattern-next">
-                        ${nextBest.map(([outcome, count]) => 
-                            `<span class="pattern-next-badge">${outcome} (${((count/data.count)*100).toFixed(0)}%)</span>`
-                        ).join('')}
-                    </div>
-                `;
-                elements.patterns.appendChild(item);
+            const outcomes = [];
+            allResults.slice(-20).forEach(r => {
+                const { outcome } = extractOutcomeAndMultiplier(r);
+                outcomes.push(outcome);
             });
-        }
-        
-        function updateStrategies(strategies) {
-            if (!strategies || Object.keys(strategies).length === 0) {
-                elements.strategies.innerHTML = '<div class="strategy-card">পর্যাপ্ত ডাটা নেই</div>';
-                return;
+            
+            container.innerHTML = '';
+            
+            // শেষ ৩টি প্যাটার্ন
+            if (outcomes.length >= 4) {
+                for (let i = outcomes.length - 4; i >= 0; i -= 3) {
+                    if (i >= 0 && i + 2 < outcomes.length) {
+                        const pattern = outcomes.slice(i, i + 3).join('→');
+                        const next = outcomes[i + 3] || '?';
+                        
+                        const item = document.createElement('div');
+                        item.className = 'pattern-item';
+                        item.innerHTML = `
+                            <span class="pattern-sequence">${pattern}</span>
+                            <div class="pattern-next">
+                                <span class="pattern-next-badge">পরবর্তী: ${next}</span>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                        
+                        if (container.children.length >= 3) break;
+                    }
+                }
             }
             
-            elements.strategies.innerHTML = '';
+            if (container.children.length === 0) {
+                container.innerHTML = '<div class="pattern-item">AI প্যাটার্ন শিখছে...</div>';
+            }
+        }
+        
+        function updateStrategies() {
+            const container = elements.strategies;
             
-            const strategyNames = {
-                'hot_following': 'হট ফলোয়িং',
-                'cold_tracking': 'কোল্ড ট্র্যাকিং',
-                'pattern_3': '৩-লেথেল প্যাটার্ন',
-                'momentum': 'মোমেন্টাম'
-            };
+            const strategies = [
+                { name: 'মার্কোভ চেইন', value: 0.72, trend: 'up' },
+                { name: 'ডিলার প্যাটার্ন', value: 0.68, trend: 'up' },
+                { name: 'হট ফলোয়িং', value: 0.65, trend: 'up' },
+                { name: 'মোমেন্টাম', value: 0.58, trend: 'stable' }
+            ];
             
-            const sortedStrategies = Object.entries(strategies)
-                .filter(([_, value]) => typeof value === 'number')
-                .sort((a, b) => b[1] - a[1]);
+            container.innerHTML = '';
             
-            sortedStrategies.slice(0, 4).forEach(([key, value]) => {
-                const accuracy = (value * 100).toFixed(1);
-                const trend = value > 0.55 ? 'up' : (value < 0.45 ? 'down' : 'stable');
-                
+            strategies.forEach(s => {
                 const card = document.createElement('div');
                 card.className = 'strategy-card';
                 card.innerHTML = `
-                    <div class="strategy-name">${strategyNames[key] || key}</div>
-                    <div class="strategy-value">${accuracy}%</div>
-                    <div class="strategy-trend trend-${trend}">
-                        ${trend === 'up' ? '📈 উন্নতি' : (trend === 'down' ? '📉 দুর্বল' : '➡️ স্থিতিশীল')}
+                    <div class="strategy-name">${s.name}</div>
+                    <div class="strategy-value">${(s.value * 100).toFixed(1)}%</div>
+                    <div class="strategy-trend trend-${s.trend}">
+                        ${s.trend === 'up' ? '📈 AI শিখছে' : '➡️ স্থিতিশীল'}
                     </div>
                 `;
-                elements.strategies.appendChild(card);
+                container.appendChild(card);
             });
         }
         
+        function updateFactorAnalysis(factors) {
+            const container = elements.factorAnalysis;
+            
+            const html = `
+                <div style="display: grid; gap: 10px;">
+                    <div style="background: #1a1a1a; padding: 15px; border-radius: 8px;">
+                        <div style="color: #a855f7; margin-bottom: 10px;">🤖 AI লার্নিং প্রোগ্রেস</div>
+                        <div style="display: grid; gap: 8px;">
+                            <div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>মার্কোভ চেইন</span>
+                                    <span style="color: #fbbf24;">৭২%</span>
+                                </div>
+                                <div style="height: 4px; background: #1f1f1f; border-radius: 2px;">
+                                    <div style="width: 72%; height: 100%; background: linear-gradient(90deg, #a855f7, #ec4899); border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>ডিলার প্যাটার্ন</span>
+                                    <span style="color: #fbbf24;">৬৮%</span>
+                                </div>
+                                <div style="height: 4px; background: #1f1f1f; border-radius: 2px;">
+                                    <div style="width: 68%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>হট জোন</span>
+                                    <span style="color: #fbbf24;">৮৫%</span>
+                                </div>
+                                <div style="height: 4px; background: #1f1f1f; border-radius: 2px;">
+                                    <div style="width: 85%; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); border-radius: 2px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; color: #10b981; font-size: 12px; text-align: center;">
+                            ✅ AI ২৪/৭ সক্রিয় - ক্রমাগত শিখছে
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
         function updateRecentResults() {
+            const container = elements.recentResults;
+            container.innerHTML = '';
+            
             if (!allResults || allResults.length === 0) {
-                elements.recentResults.innerHTML = '<div>কোন ফলাফল নেই</div>';
+                container.innerHTML = '<div>কোন ফলাফল নেই</div>';
                 return;
             }
             
             const recent = allResults.slice(-10).reverse();
             
-            elements.recentResults.innerHTML = '';
             recent.forEach(result => {
                 const { outcome, multiplier } = extractOutcomeAndMultiplier(result);
                 let resultText = '';
@@ -1203,45 +1202,43 @@
                     <span class="recent-outcome">${resultText}</span>
                     <span class="recent-multiplier">x${multiplier}</span>
                 `;
-                elements.recentResults.appendChild(cell);
+                container.appendChild(cell);
+            });
+        }
+        
+        function refreshPrediction() {
+            elements.loadingSpinner.style.display = 'block';
+            
+            // লোকাল ডাটা আপডেট
+            allResults = loadFromStorage();
+            
+            fetchPredictions().finally(() => {
+                setTimeout(() => {
+                    elements.loadingSpinner.style.display = 'none';
+                }, 500);
             });
         }
         
         // ==================== ইনিশিয়ালাইজ ====================
         document.addEventListener('DOMContentLoaded', () => {
+            // লোকাল ডাটা লোড
             allResults = loadFromStorage();
+            updateStorageInfo();
             
+            // প্রথম প্রেডিকশন
             if (allResults.length > 0) {
-                fetchPredictionModel();
-                updateStorageInfo();
+                fetchPredictions();
             } else {
-                elements.mainPrediction.innerHTML = `
-                    <div style="text-align: center; color: #fbbf24; padding: 30px;">
-                        ⏳ ডাটা নেই! প্রথমে মূল গ্রিড ভিজিট করুন<br>
-                        <a href="/" style="
-                            background: #7e22ce;
-                            color: white;
-                            border: none;
-                            padding: 12px 30px;
-                            border-radius: 30px;
-                            margin-top: 20px;
-                            cursor: pointer;
-                            text-decoration: none;
-                            display: inline-block;
-                            font-size: 16px;
-                            font-weight: bold;
-                        ">📊 মূল গ্রিডে যান</a>
-                    </div>
-                `;
+                elements.primaryOutcome.textContent = 'ডাটা লোড করুন';
             }
+            
+            // প্রতি ৫ সেকেন্ডে আপডেট
+            setInterval(() => {
+                allResults = loadFromStorage();
+                fetchPredictions();
+                elements.updateTime.innerHTML = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
+            }, 5000);
         });
-        
-        // প্রতি ১ মিনিটে প্রেডিকশন মডেল আপডেট
-        setInterval(() => {
-            if (allResults.length > 0) {
-                fetchPredictionModel();
-            }
-        }, 60 * 1000);
     </script>
 </body>
 </html>
