@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>ক্রেজি টাইম - প্রো গ্রিড</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        :root {
+            --bg-primary: #0a0f1c;
+            --bg-secondary: #141b2b;
+            --bg-card: #1e2738;
+            --accent: #9d4edd;
+            --accent-glow: #c77dff;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --border: #2a3448;
+            --cell-1: #1e3a5f;
+            --cell-2: #2d3b5c;
+            --cell-5: #3d2b4d;
+            --cell-10: #4d2b3a;
+            --cell-bonus: #2d4d3a;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        /* কাস্টম স্ক্রলবার */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* হেডার */
+        .glass-header {
+            background: rgba(30, 39, 56, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .title-section h1 {
+            font-size: clamp(24px, 6vw, 36px);
+            font-weight: 800;
+            color: #c77dff; /* ফallback কালার */
+            background: linear-gradient(135deg, #9d4edd, #c77dff, #f0abfc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -moz-background-clip: text;
+            -o-background-clip: text;
+            -ms-background-clip: text;
+            color: transparent;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 20px rgba(157, 78, 221, 0.3);
+        }
+
+        /* ফallback যদি background-clip কাজ না করে */
+        @supports not (background-clip: text) {
+            .title-section h1 {
+                color: #c77dff;
+                background: none;
+                -webkit-text-fill-color: initial;
+                text-shadow: 0 0 10px #9d4edd;
+            }
+        }
+
+        .title-section .badge {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* নেভিগেশন ট্যাব */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .nav-btn i {
+            font-size: 18px;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(157, 78, 221, 0.3);
+        }
+
+        .nav-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent-glow);
+        }
+
+        /* স্ট্যাটাস কার্ড */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 5px 15px rgba(157, 78, 221, 0.2);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: 700;
+            color: var(--accent-glow);
+        }
+
+        .stat-unit {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 2px;
+        }
+
+        /* কন্ট্রোল বার */
+        .control-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-wrapper {
+            flex: 2;
+            min-width: 200px;
+            display: flex;
+            gap: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 4px 4px 4px 16px;
+        }
+
+        .search-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-wrapper input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .search-wrapper button {
+            background: var(--accent);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .search-wrapper button:hover {
+            background: var(--accent-glow);
+            transform: scale(1.05);
+        }
+
+        /* ফিল্টার বাটন */
+        .filter-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-btn i {
+            font-size: 14px;
+        }
+
+        .filter-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent-glow);
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent-glow);
+        }
+
+        .filter-btn.export {
+            background: var(--success);
+            color: white;
+        }
+
+        .filter-btn.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Excel স্টাইল গ্রিড */
+        .grid-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .excel-grid {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 800px;
+        }
+
+        .excel-grid th {
+            background: var(--bg-secondary);
+            color: var(--accent-glow);
+            padding: 12px 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .excel-grid td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .excel-grid td:hover {
+            transform: scale(1.02);
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+        }
+
+        /* সেল স্টাইল */
+        .cell-content {
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .cell-result {
+            padding: 8px 5px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .cell-result span {
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 6px;
+            border-radius: 12px;
+        }
+
+        /* রেজাল্ট কালার */
+        .result-1 { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
+        .result-2 { background: linear-gradient(135deg, #2d3b5c, #7c3aed); }
+        .result-5 { background: linear-gradient(135deg, #3d2b4d, #b45309); }
+        .result-10 { background: linear-gradient(135deg, #4d2b3a, #dc2626); }
+        .result-coinflip { background: linear-gradient(135deg, #2d4d3a, #059669); }
+        .result-cashhunt { background: linear-gradient(135deg, #4d3a2d, #d97706); }
+        .result-crazybonus { background: linear-gradient(135deg, #3a2d4d, #7e22ce); }
+        .result-pachinko { background: linear-gradient(135deg, #2d4d4d, #0891b2); }
+
+        /* ডিটেলস ভিউ */
+        .cell-details {
+            display: none;
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            font-size: 12px;
+        }
+
+        .cell-content.expanded .cell-details {
+            display: block;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            color: var(--accent-glow);
+            font-weight: 600;
+        }
+
+        /* খালি সেল */
+        .empty-cell {
+            padding: 15px;
+            color: var(--text-secondary);
+            text-align: center;
+            font-style: italic;
+        }
+
+        /* লেজেন্ড */
+        .legend-bar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* লোডিং স্পিনার */
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* স্ক্রল টু টপ */
+        .scroll-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+            font-size: 20px;
+            box-shadow: 0 5px 15px rgba(157, 78, 221, 0.4);
+            z-index: 1000;
+        }
+
+        .scroll-top.visible {
+            opacity: 1;
+        }
+
+        .scroll-top:hover {
+            transform: scale(1.1);
+        }
+
+        /* মোবাইল রেস্পন্সিভ */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .nav-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+
+            .filter-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .control-bar {
+                padding: 10px;
+            }
+
+            .grid-wrapper {
+                padding: 10px;
+            }
+
+            .cell-result {
+                font-size: 12px;
+            }
+
+            .cell-result span {
+                font-size: 10px;
+            }
+
+            .legend-bar {
+                gap: 10px;
+            }
+        }
+
+        /* ছোট স্ক্রিনে টাচ ফ্রেন্ডলি */
+        @media (max-width: 480px) {
+            .filter-group {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .search-wrapper {
+                width: 100%;
+            }
+
+            .stat-card {
+                padding: 8px;
+            }
+        }
+    </style>
+    <!-- ফন্ট অ্যাওসাম আইকন -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- গ্লাস হেডার -->
+        <div class="glass-header">
+            <div class="title-section">
+                <h1>🎰 ক্রেজি টাইম PRO</h1>
+                <span class="badge">📊 Excel স্টাইল গ্রিড · A1 = সবচেয়ে পুরোনো</span>
+            </div>
+
+            <!-- নেভিগেশন -->
+            <div class="nav-tabs">
+                <button class="nav-btn active" onclick="showView('grid')">
+                    <i class="fas fa-table"></i>
+                    <span>📊 গ্রিড ভিউ</span>
+                </button>
+                <button class="nav-btn" onclick="window.location.href='/predictions'">
+                    <i class="fas fa-robot"></i>
+                    <span>🤖 AI প্রেডিকশন</span>
+                </button>
+            </div>
+
+            <!-- স্ট্যাটাস গ্রিড -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-label">মোট স্পিন</div>
+                    <div class="stat-value" id="totalSpins">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">সময়সীমা</div>
+                    <div class="stat-value" id="timeRange">---</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">শেষ সেল</div>
+                    <div class="stat-value" id="lastCell">A1</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">AI অ্যাকুরেসি</div>
+                    <div class="stat-value" id="aiAccuracy">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- কন্ট্রোল বার -->
+        <div class="control-bar">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="🔍 খুঁজুন (ডিলার, CF, CH, 1, 2...)">
+                <button onclick="clearSearch()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all"><i class="fas fa-globe"></i> সব</button>
+                <button class="filter-btn" data-filter="1"><i class="fas fa-dice"></i> 1</button>
+                <button class="filter-btn" data-filter="2"><i class="fas fa-dice"></i> 2</button>
+                <button class="filter-btn" data-filter="5"><i class="fas fa-dice"></i> 5</button>
+                <button class="filter-btn" data-filter="10"><i class="fas fa-dice"></i> 10</button>
+                <button class="filter-btn" data-filter="coinflip"><i class="fas fa-coins"></i> CF</button>
+                <button class="filter-btn" data-filter="cashhunt"><i class="fas fa-money-bill"></i> CH</button>
+                <button class="filter-btn" data-filter="crazybonus"><i class="fas fa-star"></i> CB</button>
+                <button class="filter-btn" data-filter="pachinko"><i class="fas fa-gamepad"></i> PC</button>
+            </div>
+
+            <div class="filter-group" style="margin-left: auto;">
+                <button class="filter-btn export" onclick="exportData()"><i class="fas fa-download"></i> এক্সপোর্ট</button>
+                <button class="filter-btn" onclick="refreshData()"><i class="fas fa-sync-alt"></i> রিফ্রেশ</button>
+                <button class="filter-btn danger" onclick="clearCache()"><i class="fas fa-trash"></i> ক্যাশ</button>
+            </div>
+        </div>
+
+        <!-- লেজেন্ড -->
+        <div class="legend-bar">
+            <div class="legend-item"><span class="legend-color" style="background: #1e3a5f;"></span> 1</div>
+            <div class="legend-item"><span class="legend-color" style="background: #2d3b5c;"></span> 2</div>
+            <div class="legend-item"><span class="legend-color" style="background: #3d2b4d;"></span> 5</div>
+            <div class="legend-item"><span class="legend-color" style="background: #4d2b3a;"></span> 10</div>
+            <div class="legend-item"><span class="legend-color" style="background: #2d4d3a;"></span> CoinFlip</div>
+            <div class="legend-item"><span class="legend-color" style="background: #4d3a2d;"></span> CashHunt</div>
+            <div class="legend-item"><span class="legend-color" style="background: #3a2d4d;"></span> CrazyBonus</div>
+            <div class="legend-item"><span class="legend-color" style="background: #2d4d4d;"></span> Pachinko</div>
+            <div class="legend-item"><i class="fas fa-arrow-up" style="color: #f59e0b;"></i> A1 = পুরোনো</div>
+            <div class="legend-item"><i class="fas fa-arrow-down" style="color: #10b981;"></i> সর্বশেষ = নতুন</div>
+        </div>
+
+        <!-- গ্রিড ভিউ -->
+        <div class="grid-wrapper" id="gridWrapper">
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner"></div>
+                <div style="color: var(--text-secondary);">ডাটা লোড হচ্ছে...</div>
+                <div style="font-size: 12px; margin-top: 8px; color: var(--accent);" id="loadingStatus"></div>
+            </div>
+            <div id="gridContainer" style="display: none;"></div>
+        </div>
+
+        <!-- ফুটার স্ট্যাটাস -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <span><i class="fas fa-clock" style="color: var(--accent);"></i> <span id="updateTime">আপডেট: --</span></span>
+                <span><i class="fas fa-database" style="color: var(--success);"></i> <span id="storageInfo">ক্যাশ: --</span></span>
+            </div>
+            <div>
+                <span class="stat-value" id="visibleCount" style="font-size: 14px;">দৃশ্যমান: 0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- স্ক্রল টু টপ -->
+    <div class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <script>
+        // গ্লোবাল ভেরিয়েবল
+        const STORAGE_KEY = 'crazyTimeResults';
+        const ROWS_PER_COL = 15;
+        let allResults = [];
+        let filteredResults = [];
+        let expandedCell = null;
+
+        // ডোম এলিমেন্ট
+        const elements = {
+            totalSpins: document.getElementById('totalSpins'),
+            timeRange: document.getElementById('timeRange'),
+            lastCell: document.getElementById('lastCell'),
+            aiAccuracy: document.getElementById('aiAccuracy'),
+            updateTime: document.getElementById('updateTime'),
+            storageInfo: document.getElementById('storageInfo'),
+            visibleCount: document.getElementById('visibleCount'),
+            gridContainer: document.getElementById('gridContainer'),
+            loadingSpinner: document.getElementById('loadingSpinner'),
+            loadingStatus: document.getElementById('loadingStatus'),
+            searchInput: document.getElementById('searchInput'),
+            scrollTop: document.getElementById('scrollTop')
+        };
+
+        // স্ক্রল ইভেন্ট
+        window.addEventListener('scroll', () => {
+            if (elements.scrollTop) {
+                elements.scrollTop.classList.toggle('visible', window.scrollY > 400);
+            }
+        });
+
+        // কলাম লেটার জেনারেটর
+        function getColumnLetter(num) {
+            if (num < 0) return '';
+            let letter = '';
+            while (num >= 0) {
+                letter = String.fromCharCode(65 + (num % 26)) + letter;
+                num = Math.floor(num / 26) - 1;
+            }
+            return letter;
+        }
+
+        // রেজাল্ট ক্লাস এবং টেক্সট
+        function getResultInfo(result) {
+            try {
+                const outcome = result.data?.result?.outcome || {};
+                const wheel = outcome.wheelResult || {};
+                
+                let outcomeType = '';
+                let outcomeClass = '';
+                let outcomeText = '';
+                let multiplier = outcome.maxMultiplier || 1;
+
+                if (wheel.type === 'BonusRound') {
+                    switch(wheel.wheelSector) {
+                        case 'CoinFlip':
+                            outcomeClass = 'result-coinflip';
+                            outcomeText = '🎰 CF';
+                            outcomeType = 'CoinFlip';
+                            break;
+                        case 'CashHunt':
+                            outcomeClass = 'result-cashhunt';
+                            outcomeText = '💰 CH';
+                            outcomeType = 'CashHunt';
+                            break;
+                        case 'CrazyBonus':
+                            outcomeClass = 'result-crazybonus';
+                            outcomeText = '🎰 CB';
+                            outcomeType = 'CrazyBonus';
+                            break;
+                        case 'Pachinko':
+                            outcomeClass = 'result-pachinko';
+                            outcomeText = '📌 PC';
+                            outcomeType = 'Pachinko';
+                            break;
+                        default:
+                            outcomeClass = 'result-coinflip';
+                            outcomeText = '🎲 ??';
+                            outcomeType = 'Unknown';
+                    }
+                } else {
+                    outcomeType = wheel.wheelSector || '0';
+                    outcomeClass = `result-${outcomeType}`;
+                    outcomeText = `🎲 ${outcomeType}`;
+                }
+
+                return {
+                    type: outcomeType,
+                    class: outcomeClass,
+                    text: outcomeText,
+                    multiplier: multiplier,
+                    dealer: result.data?.dealer?.name || '??',
+                    time: result.data?.settledAt || '',
+                    id: result.id || ''
+                };
+            } catch (e) {
+                console.error('Result parse error:', e);
+                return {
+                    type: 'Unknown',
+                    class: 'result-1',
+                    text: '🎲 ?',
+                    multiplier: 1,
+                    dealer: '??',
+                    time: '',
+                    id: ''
+                };
+            }
+        }
+
+        // ডাটা লোড
+        async function loadData() {
+            try {
+                if (elements.loadingSpinner) elements.loadingSpinner.style.display = 'block';
+                if (elements.gridContainer) elements.gridContainer.style.display = 'none';
+                if (elements.loadingStatus) {
+                    elements.loadingStatus.innerText = 'সার্ভার থেকে ডাটা আনা হচ্ছে...';
+                }
+
+                console.log('📡 ডাটা লোড করা হচ্ছে...');
+                
+                const response = await fetch('/api/crazytime?page=0&size=5000');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log(`✅ ${data.length} টি ডাটা পাওয়া গেছে`);
+                
+                if (data && data.length > 0) {
+                    // সর্ট (পুরোনো প্রথমে)
+                    data.sort((a, b) => {
+                        const timeA = new Date(a.data?.settledAt || 0).getTime();
+                        const timeB = new Date(b.data?.settledAt || 0).getTime();
+                        return timeA - timeB;
+                    });
+
+                    allResults = data;
+                    filteredResults = [...allResults];
+                    
+                    // লোকাল স্টোরেজে সেভ
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(allResults));
+                        console.log('✅ লোকাল স্টোরেজে সেভ করা হয়েছে');
+                    } catch (e) {
+                        console.warn('localStorage save failed:', e);
+                    }
+                    
+                    displayGrid();
+                    
+                    // AI অ্যাকুরেসি লোড
+                    loadAIAccuracy();
+                } else {
+                    console.warn('⚠️ কোন ডাটা পাওয়া যায়নি');
+                    if (elements.gridContainer) {
+                        elements.gridContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><i class="fas fa-database" style="font-size: 48px; margin-bottom: 15px;"></i><br>কোন ডাটা নেই</div>';
+                        elements.gridContainer.style.display = 'block';
+                    }
+                    if (elements.loadingSpinner) elements.loadingSpinner.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('❌ ডাটা লোড ত্রুটি:', error);
+                
+                // লোকাল ক্যাশ থেকে লোড
+                try {
+                    const cached = localStorage.getItem(STORAGE_KEY);
+                    if (cached) {
+                        console.log('📦 ক্যাশ থেকে ডাটা লোড করা হচ্ছে');
+                        allResults = JSON.parse(cached);
+                        filteredResults = [...allResults];
+                        displayGrid();
+                    } else {
+                        if (elements.gridContainer) {
+                            elements.gridContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px; color: var(--warning);"></i>
+                                <br>ডাটা লোড করতে সমস্যা: ${error.message}
+                                <br><button onclick="loadData()" style="margin-top: 20px; padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 30px; cursor: pointer;">আবার চেষ্টা করুন</button>
+                            </div>`;
+                            elements.gridContainer.style.display = 'block';
+                        }
+                        if (elements.loadingSpinner) elements.loadingSpinner.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error('ক্যাশ ত্রুটি:', e);
+                    if (elements.loadingSpinner) elements.loadingSpinner.style.display = 'none';
+                }
+            }
+        }
+
+        // AI অ্যাকুরেসি লোড
+        async function loadAIAccuracy() {
+            try {
+                const response = await fetch('/api/predictions');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.model_status?.accuracy && elements.aiAccuracy) {
+                        elements.aiAccuracy.innerText = (data.model_status.accuracy * 100).toFixed(1) + '%';
+                    }
+                }
+            } catch (error) {
+                console.log('AI accuracy not available');
+            }
+        }
+
+        // গ্রিড ডিসপ্লে
+        function displayGrid() {
+            if (!filteredResults || filteredResults.length === 0) {
+                if (elements.gridContainer) {
+                    elements.gridContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><i class="fas fa-database" style="font-size: 48px; margin-bottom: 15px;"></i><br>কোন ডাটা নেই</div>';
+                    elements.gridContainer.style.display = 'block';
+                }
+                if (elements.loadingSpinner) elements.loadingSpinner.style.display = 'none';
+                return;
+            }
+
+            const total = filteredResults.length;
+            const cols = Math.ceil(total / ROWS_PER_COL);
+            
+            // স্ট্যাটস আপডেট
+            if (elements.totalSpins) elements.totalSpins.innerText = allResults.length;
+            if (elements.visibleCount) elements.visibleCount.innerText = `দৃশ্যমান: ${total}`;
+            
+            if (allResults.length > 0) {
+                const oldest = formatTime(allResults[0]?.data?.settledAt);
+                if (elements.timeRange) elements.timeRange.innerText = `${oldest}`;
+            }
+
+            const lastCol = getColumnLetter(cols - 1);
+            const lastRow = total % ROWS_PER_COL || ROWS_PER_COL;
+            if (elements.lastCell) elements.lastCell.innerText = `${lastCol}${lastRow}`;
+
+            // গ্রিড তৈরি
+            let html = '<table class="excel-grid"><thead><tr>';
+            
+            for (let c = 0; c < cols; c++) {
+                html += `<th>${getColumnLetter(c)} <span style="color: var(--text-secondary); font-size: 11px;">1-15</span></th>`;
+            }
+            html += '</tr></thead><tbody>';
+
+            for (let r = 0; r < ROWS_PER_COL; r++) {
+                html += '<tr>';
+                
+                for (let c = 0; c < cols; c++) {
+                    const index = c * ROWS_PER_COL + r;
+                    const result = filteredResults[index];
+                    
+                    if (result) {
+                        const info = getResultInfo(result);
+                        const cellId = `${getColumnLetter(c)}${r + 1}`;
+                        const isExpanded = expandedCell === cellId;
+                        
+                        html += `<td onclick="toggleCell('${cellId}')">
+                            <div class="cell-content ${isExpanded ? 'expanded' : ''}">
+                                <div class="cell-result ${info.class}">
+                                    ${info.text}
+                                    <span>x${info.multiplier}</span>
+                                </div>
+                                <div class="cell-details">
+                                    <div class="detail-row">
+                                        <span class="detail-label">সেল</span>
+                                        <span class="detail-value">${cellId}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">সময়</span>
+                                        <span>${formatTime(info.time)}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">ডিলার</span>
+                                        <span style="color: var(--success);">${info.dealer}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">পজিশন</span>
+                                        <span>${index + 1}/${total}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += `<td><div class="empty-cell">-</div></td>`;
+                    }
+                }
+                
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            
+            if (elements.gridContainer) {
+                elements.gridContainer.innerHTML = html;
+                elements.gridContainer.style.display = 'block';
+            }
+            
+            if (elements.loadingSpinner) {
+                elements.loadingSpinner.style.display = 'none';
+            }
+            
+            updateStorageInfo();
+        }
+
+        // টাইম ফরম্যাট
+        function formatTime(timeStr) {
+            if (!timeStr) return '--';
+            try {
+                const date = new Date(timeStr);
+                return `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+            } catch (e) {
+                return '--';
+            }
+        }
+
+        // সেল টগল
+        function toggleCell(cellId) {
+            expandedCell = expandedCell === cellId ? null : cellId;
+            displayGrid();
+        }
+
+        // সার্চ ক্লিয়ার
+        function clearSearch() {
+            if (elements.searchInput) {
+                elements.searchInput.value = '';
+            }
+            filteredResults = [...allResults];
+            displayGrid();
+        }
+
+        // ফিল্টার ইভেন্ট
+        document.querySelectorAll('[data-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                applyFilters();
+            });
+        });
+
+        // ফিল্টার অ্যাপ্লাই
+        function applyFilters() {
+            const filter = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+            const search = elements.searchInput?.value.toLowerCase() || '';
+
+            filteredResults = allResults.filter(result => {
+                const info = getResultInfo(result);
+                
+                // ফিল্টার চেক
+                if (filter !== 'all') {
+                    if (filter === '1' && info.type !== '1') return false;
+                    if (filter === '2' && info.type !== '2') return false;
+                    if (filter === '5' && info.type !== '5') return false;
+                    if (filter === '10' && info.type !== '10') return false;
+                    if (filter === 'coinflip' && info.type !== 'CoinFlip') return false;
+                    if (filter === 'cashhunt' && info.type !== 'CashHunt') return false;
+                    if (filter === 'crazybonus' && info.type !== 'CrazyBonus') return false;
+                    if (filter === 'pachinko' && info.type !== 'Pachinko') return false;
+                }
+
+                // সার্চ চেক
+                if (search) {
+                    return info.dealer.toLowerCase().includes(search) ||
+                           info.type.toLowerCase().includes(search);
+                }
+
+                return true;
+            });
+
+            expandedCell = null;
+            displayGrid();
+        }
+
+        // সার্চ ইনপুট
+        if (elements.searchInput) {
+            elements.searchInput.addEventListener('input', applyFilters);
+        }
+
+        // স্টোরেজ ইনফো আপডেট
+        function updateStorageInfo() {
+            const now = new Date();
+            if (elements.updateTime) {
+                elements.updateTime.innerText = `আপডেট: ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+            }
+            if (elements.storageInfo) {
+                elements.storageInfo.innerText = `ক্যাশ: ${allResults.length} টি`;
+            }
+        }
+
+        // রিফ্রেশ
+        function refreshData() {
+            loadData();
+        }
+
+        // ক্যাশ ক্লিয়ার
+        function clearCache() {
+            if (confirm('সব ক্যাশ ডাটা মুছে ফেলবেন?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                allResults = [];
+                filteredResults = [];
+                displayGrid();
+                loadData();
+            }
+        }
+
+        // এক্সপোর্ট
+        function exportData() {
+            if (!allResults.length) return;
+            
+            const dataStr = JSON.stringify(allResults, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `crazytime_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        }
+
+        // লোকাল ক্যাশ থেকে লোড
+        function loadFromCache() {
+            try {
+                const cached = localStorage.getItem(STORAGE_KEY);
+                if (cached) {
+                    console.log('📦 ক্যাশ থেকে লোড করা হচ্ছে');
+                    allResults = JSON.parse(cached);
+                    filteredResults = [...allResults];
+                    displayGrid();
+                } else {
+                    console.log('🔄 ক্যাশ নেই, সার্ভার থেকে লোড করা হচ্ছে');
+                    loadData();
+                }
+            } catch (e) {
+                console.error('Cache load error:', e);
+                loadData();
+            }
+        }
+
+        // ইনিশিয়ালাইজ
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM লোড হয়েছে, ডাটা লোড করা হচ্ছে...');
+            loadFromCache();
+        });
+
+        // প্রতি ১০ সেকেন্ডে নতুন ডাটা চেক
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/crazytime/latest');
+                if (response.ok) {
+                    const latest = await response.json();
+                    
+                    // চেক করুন নতুন কিনা
+                    const exists = allResults.some(r => r.id === latest.id);
+                    
+                    if (!exists && latest.id) {
+                        allResults.push(latest);
+                        allResults.sort((a, b) => {
+                            const timeA = new Date(a.data?.settledAt || 0).getTime();
+                            const timeB = new Date(b.data?.settledAt || 0).getTime();
+                            return timeA - timeB;
+                        });
+                        
+                        filteredResults = [...allResults];
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(allResults));
+                        } catch (e) {}
+                        displayGrid();
+                        
+                        showNotification('✨ নতুন ডাটা পাওয়া গেছে!');
+                    }
+                }
+            } catch (error) {
+                console.log('New data check failed');
+            }
+        }, 10000);
+
+        // নোটিফিকেশন ফাংশন
+        function showNotification(msg) {
+            const notif = document.createElement('div');
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--accent);
+                color: white;
+                padding: 12px 24px;
+                border-radius: 30px;
+                box-shadow: 0 5px 15px rgba(157,78,221,0.3);
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+            `;
+            notif.innerText = msg;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.remove();
+            }, 3000);
+        }
+
+        // শো ভিউ ফাংশন
+        function showView(view) {
+            console.log('Show view:', view);
+        }
+    </script>
+</body>
+</html>

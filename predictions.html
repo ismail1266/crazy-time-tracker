@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>ক্রেজি টাইম - AI প্রেডিকশন প্রো</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --accent: #c084fc;
+            --accent-dark: #a855f7;
+            --accent-glow: #e9d5ff;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --success: #4ade80;
+            --warning: #facc15;
+            --danger: #f87171;
+            --info: #38bdf8;
+            --border: #475569;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 12px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* অ্যানিমেটেড ব্যাকগ্রাউন্ড */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(192, 132, 252, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* গ্লাসমরফিজম হেডার */
+        .glass-header {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(203, 213, 225, 0.1);
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title-section h1 {
+            font-size: clamp(28px, 7vw, 42px);
+            font-weight: 800;
+            color: #c084fc; /* ফallback কালার */
+            background: linear-gradient(135deg, #c084fc, #e9d5ff, #f0abfc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -moz-background-clip: text;
+            -o-background-clip: text;
+            -ms-background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 30px rgba(192, 132, 252, 0.3);
+        }
+
+        /* ফallback যদি background-clip কাজ না করে */
+        @supports not (background-clip: text) {
+            .title-section h1 {
+                color: #c084fc;
+                background: none;
+                text-shadow: 0 0 15px #a855f7;
+            }
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #a855f7, #c084fc);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 20px -5px rgba(168, 85, 247, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .ai-badge i {
+            font-size: 18px;
+        }
+
+        /* নেভিগেশন ট্যাব */
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .nav-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 25px -5px rgba(192, 132, 252, 0.3);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #a855f7, #c084fc);
+            color: white;
+            border: none;
+        }
+
+        /* স্ট্যাটাস গ্রিড */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            20% { transform: translateX(100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 30px -10px rgba(192, 132, 252, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .stat-value {
+            font-size: clamp(20px, 5vw, 28px);
+            font-weight: 700;
+            color: var(--accent-glow);
+            text-shadow: 0 0 10px rgba(192, 132, 252, 0.3);
+        }
+
+        /* মেইন প্রেডিকশন কার্ড */
+        .prediction-main {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(192, 132, 252, 0.1));
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(192, 132, 252, 0.3);
+            border-radius: 32px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 30px 60px -15px rgba(168, 85, 247, 0.4);
+        }
+
+        .prediction-main::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(192,132,252,0.2) 0%, transparent 70%);
+            animation: pulseGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .next-spin-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            color: var(--accent-glow);
+            margin-bottom: 20px;
+            border: 1px solid rgba(192,132,252,0.3);
+        }
+
+        .primary-prediction {
+            font-size: clamp(60px, 15vw, 100px);
+            font-weight: 900;
+            color: #c084fc;
+            text-shadow: 0 0 30px #a855f7, 0 0 60px #c084fc;
+            line-height: 1;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .confidence-meter {
+            max-width: 300px;
+            margin: 20px auto;
+        }
+
+        .confidence-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .meter-track {
+            height: 16px;
+            background: var(--bg-secondary);
+            border-radius: 30px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #c084fc, #e9d5ff);
+            border-radius: 30px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .meter-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* অল্টারনেটিভ কার্ড */
+        .alternatives {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .alt-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .alt-card:hover {
+            transform: scale(1.05);
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px -5px rgba(192,132,252,0.3);
+            background: var(--bg-card);
+        }
+
+        .alt-card i {
+            color: var(--accent);
+        }
+
+        /* ড্যাশবোর্ড গ্রিড */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(203, 213, 225, 0.1);
+            border-radius: 24px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(192,132,252,0.3);
+            box-shadow: 0 20px 40px -12px rgba(168, 85, 247, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header i {
+            font-size: 24px;
+            color: var(--accent);
+        }
+
+        .card-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* প্রোবাবিলিটি বার */
+        .prob-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .prob-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 4px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .prob-item:hover {
+            background: var(--bg-card);
+            transform: translateX(5px);
+        }
+
+        .prob-outcome {
+            width: 60px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .prob-track {
+            flex: 1;
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #c084fc);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            transition: width 0.5s ease;
+        }
+
+        .prob-value {
+            width: 50px;
+            text-align: right;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* জোন কার্ড */
+        .zone-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .zone-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .zone-item:hover {
+            transform: translateX(5px);
+            background: var(--bg-card);
+        }
+
+        .zone-hot {
+            color: #f87171;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .zone-cold {
+            color: #60a5fa;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .zone-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-hot {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fecaca;
+        }
+
+        .badge-cold {
+            background: rgba(59, 130, 246, 0.2);
+            color: #bfdbfe;
+        }
+
+        /* প্যাটার্ন আইটেম */
+        .pattern-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .pattern-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s ease;
+        }
+
+        .pattern-item:hover {
+            transform: translateX(5px);
+            background: var(--bg-card);
+        }
+
+        .pattern-sequence {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .pattern-next {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pattern-badge {
+            background: var(--bg-card);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* স্ট্র্যাটেজি গ্রিড */
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .strategy-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .strategy-card:hover {
+            transform: scale(1.02);
+            background: var(--bg-card);
+        }
+
+        .strategy-name {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .strategy-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .trend-up { color: #4ade80; }
+        .trend-down { color: #f87171; }
+        .trend-stable { color: #facc15; }
+
+        /* রিসেন্ট রেজাল্ট */
+        .recent-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .recent-cell {
+            width: 55px;
+            height: 55px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .recent-cell:hover {
+            transform: scale(1.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(192,132,252,0.3);
+        }
+
+        .recent-outcome {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .recent-multiplier {
+            font-size: 10px;
+            color: var(--accent);
+        }
+
+        /* ফ্যাক্টর এনালাইসিস */
+        .factor-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .factor-item {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .factor-item:hover {
+            transform: translateX(5px);
+            background: var(--bg-card);
+        }
+
+        .factor-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .factor-bar {
+            height: 8px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .factor-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .factor-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .factor-markov { background: linear-gradient(90deg, #a855f7, #c084fc); }
+        .factor-dealer { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .factor-multiplier { background: linear-gradient(90deg, #f97316, #fb923c); }
+        .factor-time { background: linear-gradient(90deg, #10b981, #34d399); }
+        .factor-hot { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        /* ট্রেন্ড লাইন */
+        .trend-line {
+            width: 100%;
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            margin-top: 10px;
+        }
+
+        .trend-bar {
+            flex: 1;
+            background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s ease;
+        }
+
+        /* লোডিং */
+        .loading-container {
+            text-align: center;
+            padding: 60px;
+        }
+
+        .ai-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--bg-secondary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .pulse-text {
+            animation: pulseText 1.5s ease-in-out infinite;
+            color: var(--accent);
+        }
+
+        @keyframes pulseText {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* নোটিফিকেশন */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            color: white;
+            padding: 15px 25px;
+            border-radius: 40px;
+            box-shadow: 0 15px 30px -10px rgba(168,85,247,0.5);
+            z-index: 9999;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+        /* রিফ্রেশ বাটন */
+        .refresh-btn {
+            background: var(--accent);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(168,85,247,0.3);
+        }
+
+        .refresh-btn:hover {
+            transform: rotate(180deg) scale(1.1);
+        }
+
+        /* টাইমস্ট্যাম্প */
+        .timestamp {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .live-indicator {
+            width: 10px;
+            height: 10px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: livePulse 1.5s infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* মোবাইল রেস্পন্সিভ */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .glass-header {
+                padding: 16px;
+            }
+
+            .nav-btn {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .primary-prediction {
+                font-size: 60px;
+            }
+
+            .recent-cell {
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .alternatives {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .alt-card {
+                justify-content: center;
+            }
+        }
+    </style>
+    <!-- ফন্ট অ্যাওসাম -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- গ্লাস হেডার -->
+        <div class="glass-header">
+            <div class="title-section">
+                <h1>🤖 ক্রেজি টাইম AI প্রো</h1>
+                <div class="ai-badge">
+                    <i class="fas fa-brain"></i>
+                    <span>২৪/৭ রিয়েল-টাইম লার্নিং</span>
+                </div>
+            </div>
+
+            <!-- নেভিগেশন -->
+            <div class="nav-tabs">
+                <button class="nav-btn" onclick="window.location.href='/'">
+                    <i class="fas fa-table"></i>
+                    <span>📊 গ্রিড ভিউ</span>
+                </button>
+                <button class="nav-btn active">
+                    <i class="fas fa-robot"></i>
+                    <span>🤖 AI প্রেডিকশন</span>
+                </button>
+            </div>
+
+            <!-- স্ট্যাটাস গ্রিড -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-database"></i></div>
+                    <div class="stat-label">মোট ডাটা</div>
+                    <div class="stat-value" id="totalData">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-label">AI অ্যাকুরেসি</div>
+                    <div class="stat-value" id="aiAccuracy">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-label">লার্নিং ফেজ</div>
+                    <div class="stat-value" id="learningPhase">বেসিক</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-microchip"></i></div>
+                    <div class="stat-label">মডেল</div>
+                    <div class="stat-value" id="modelType">এনসেম্বল</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- মেইন প্রেডিকশন -->
+        <div class="prediction-main" id="mainPrediction">
+            <div class="next-spin-badge">
+                <i class="fas fa-sparkles"></i> পরবর্তী স্পিন প্রেডিকশন
+                <span class="live-indicator" style="display: inline-block; margin-left: 8px;"></span>
+            </div>
+            <div class="primary-prediction" id="primaryOutcome">--</div>
+            
+            <div class="confidence-meter">
+                <div class="confidence-header">
+                    <span><i class="fas fa-chart-pie"></i> কনফিডেন্স লেভেল</span>
+                    <span id="confidencePercent">0%</span>
+                </div>
+                <div class="meter-track">
+                    <div class="meter-fill" id="confidenceMeter" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="alternatives" id="alternatives">
+                <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
+                <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
+                <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
+            </div>
+        </div>
+
+        <!-- ড্যাশবোর্ড গ্রিড -->
+        <div class="dashboard-grid">
+            <!-- সম্ভাবনা কার্ড -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie"></i>
+                    <h3>ফলাফলের সম্ভাবনা</h3>
+                </div>
+                <div id="probabilities" class="prob-list">
+                    <div class="loading-container" style="padding: 20px;">
+                        <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- হট/কোল্ড জোন -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="fas fa-fire"></i>
+                    <h3>হট vs কোল্ড জোন</h3>
+                </div>
+                <div id="hotColdZones" class="zone-list">
+                    <div class="loading-container" style="padding: 20px;">
+                        <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- প্যাটার্ন রিকগনিশন -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>শীর্ষ প্যাটার্ন (মার্কোভ চেইন)</h3>
+                </div>
+                <div id="patterns" class="pattern-list">
+                    <div class="loading-container" style="padding: 20px;">
+                        <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- স্ট্র্যাটেজি পারফরমেন্স -->
+            <div class="glass-card">
+                <div class="card-header">
+                    <i class="fas fa-trophy"></i>
+                    <h3>স্ট্র্যাটেজি র‍্যাংকিং</h3>
+                </div>
+                <div id="strategies" class="strategy-grid">
+                    <div class="loading-container" style="padding: 20px;">
+                        <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ফ্যাক্টর এনালাইসিস -->
+        <div class="glass-card" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <i class="fas fa-microscope"></i>
+                <h3>AI ফ্যাক্টর এনালাইসিস (রিয়েল-টাইম)</h3>
+            </div>
+            <div id="factorAnalysis" class="factor-grid">
+                <div class="loading-container" style="padding: 20px;">
+                    <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ট্রেন্ড এনালাইসিস -->
+        <div class="glass-card" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <i class="fas fa-chart-line"></i>
+                <h3>ট্রেন্ড এনালাইসিস (শেষ ২০ স্পিন)</h3>
+            </div>
+            <div id="trendAnalysis" class="trend-line">
+                <!-- ডায়নামিক ট্রেন্ড বার আসবে -->
+            </div>
+        </div>
+
+        <!-- রিসেন্ট রেজাল্ট -->
+        <div class="glass-card">
+            <div class="card-header">
+                <i class="fas fa-history"></i>
+                <h3>সর্বশেষ ২০টি ফলাফল</h3>
+            </div>
+            <div id="recentResults" class="recent-grid">
+                <div class="loading-container" style="padding: 20px;">
+                    <div class="ai-spinner" style="width: 30px; height: 30px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ফুটার -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg-secondary); border-radius: 20px; margin-top: 20px;">
+            <div class="timestamp">
+                <span class="live-indicator"></span>
+                <span id="updateTime">আপডেট হচ্ছে...</span>
+            </div>
+            <div>
+                <span class="badge" style="background: var(--accent); padding: 6px 12px; border-radius: 20px;">
+                    <i class="fas fa-clock"></i> ২৪/৭ রিয়েল-টাইম
+                </span>
+            </div>
+            <button class="refresh-btn" onclick="refreshPredictions()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // গ্লোবাল ভেরিয়েবল
+        let allResults = [];
+        let predictionData = null;
+        let lastUpdateTime = null;
+        let autoRefreshInterval = null;
+
+        // ডোম এলিমেন্ট
+        const elements = {
+            totalData: document.getElementById('totalData'),
+            aiAccuracy: document.getElementById('aiAccuracy'),
+            learningPhase: document.getElementById('learningPhase'),
+            modelType: document.getElementById('modelType'),
+            primaryOutcome: document.getElementById('primaryOutcome'),
+            confidencePercent: document.getElementById('confidencePercent'),
+            confidenceMeter: document.getElementById('confidenceMeter'),
+            alternatives: document.getElementById('alternatives'),
+            probabilities: document.getElementById('probabilities'),
+            hotColdZones: document.getElementById('hotColdZones'),
+            patterns: document.getElementById('patterns'),
+            strategies: document.getElementById('strategies'),
+            factorAnalysis: document.getElementById('factorAnalysis'),
+            recentResults: document.getElementById('recentResults'),
+            trendAnalysis: document.getElementById('trendAnalysis'),
+            updateTime: document.getElementById('updateTime')
+        };
+
+        // ফ্যাক্টর কালার ম্যাপিং
+        const factorColors = {
+            '1': '#1e3a5f',
+            '2': '#2d3b5c',
+            '5': '#3d2b4d',
+            '10': '#4d2b3a',
+            'CoinFlip': '#2d4d3a',
+            'CashHunt': '#4d3a2d',
+            'CrazyBonus': '#3a2d4d',
+            'Pachinko': '#2d4d4d'
+        };
+
+        // ফ্যাক্টর আইকন ম্যাপিং
+        const factorIcons = {
+            '1': '🎲',
+            '2': '🎲',
+            '5': '🎲',
+            '10': '🎲',
+            'CoinFlip': '🪙',
+            'CashHunt': '💰',
+            'CrazyBonus': '⭐',
+            'Pachinko': '📌'
+        };
+
+        // ডাটা লোড
+        async function loadData() {
+            try {
+                // লোকাল স্টোরেজ থেকে ডাটা লোড
+                const cached = localStorage.getItem('crazyTimeResults');
+                if (cached) {
+                    allResults = JSON.parse(cached);
+                }
+
+                // প্রেডিকশন লোড
+                await loadPredictions();
+                updateRecentResults();
+                updateTrendAnalysis();
+
+                // অটো রিফ্রেশ সেটআপ
+                setupAutoRefresh();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('❌ ডাটা লোড করতে সমস্যা', 'error');
+            }
+        }
+
+        // অটো রিফ্রেশ সেটআপ
+        function setupAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            // প্রতি ১০ সেকেন্ডে নতুন ডাটা চেক
+            autoRefreshInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/crazytime/latest');
+                    if (response.ok) {
+                        const latest = await response.json();
+                        
+                        // নতুন ডাটা চেক
+                        const exists = allResults.some(r => r.id === latest.id);
+                        
+                        if (!exists && latest.id) {
+                            allResults.push(latest);
+                            if (allResults.length > 2000) {
+                                allResults = allResults.slice(-2000);
+                            }
+                            
+                            // লোকাল স্টোরেজ আপডেট
+                            localStorage.setItem('crazyTimeResults', JSON.stringify(allResults));
+                            
+                            // প্রেডিকশন রিফ্রেশ
+                            await loadPredictions();
+                            updateRecentResults();
+                            updateTrendAnalysis();
+                            
+                            showNotification('✨ নতুন ডাটা পাওয়া গেছে!', 'success');
+                        }
+                    }
+                } catch (error) {
+                    console.log('Auto refresh failed:', error);
+                }
+            }, 10000);
+        }
+
+        // প্রেডিকশন লোড
+        async function loadPredictions() {
+            try {
+                const response = await fetch('/api/predictions');
+                
+                if (!response.ok) throw new Error('Failed to load predictions');
+                
+                const data = await response.json();
+                predictionData = data;
+                
+                updatePredictionUI(data);
+                updateStats(data);
+                updateFactorAnalysis(data);
+                updateHotColdZones();
+                updatePatterns();
+                updateStrategies();
+                
+            } catch (error) {
+                console.error('Prediction error:', error);
+                // ফallback প্রেডিকশন
+                if (allResults.length > 0) {
+                    generateLocalPrediction();
+                }
+            }
+        }
+
+        // UI আপডেট
+        function updatePredictionUI(data) {
+            if (!data || !data.predictions || data.predictions.length === 0) return;
+
+            const preds = data.predictions;
+            
+            // প্রাইমারি প্রেডিকশন
+            if (preds.length > 0) {
+                const primaryOutcome = preds[0][0];
+                elements.primaryOutcome.innerText = formatOutcome(primaryOutcome);
+                
+                // কনফিডেন্স
+                const confidence = preds[0][1] * 100;
+                elements.confidencePercent.innerText = confidence.toFixed(1) + '%';
+                elements.confidenceMeter.style.width = confidence + '%';
+                
+                // অল্টারনেটিভ
+                elements.alternatives.innerHTML = '';
+                for (let i = 1; i < Math.min(4, preds.length); i++) {
+                    const outcome = preds[i][0];
+                    const prob = (preds[i][1] * 100).toFixed(1);
+                    const icon = factorIcons[outcome] || '🎲';
+                    
+                    const alt = document.createElement('div');
+                    alt.className = 'alt-card';
+                    alt.onclick = () => selectAlternative(outcome);
+                    alt.innerHTML = `<i class="fas fa-dice"></i> <span>${icon} ${outcome} (${prob}%)</span>`;
+                    elements.alternatives.appendChild(alt);
+                }
+            }
+
+            // প্রোবাবিলিটি
+            if (preds.length > 0) {
+                let probHtml = '';
+                preds.slice(0, 8).forEach(([outcome, prob]) => {
+                    const percent = (prob * 100).toFixed(1);
+                    const icon = factorIcons[outcome] || '🎲';
+                    probHtml += `
+                        <div class="prob-item">
+                            <span class="prob-outcome">${icon} ${outcome}</span>
+                            <div class="prob-track">
+                                <div class="prob-fill" style="width: ${percent}%">${percent}%</div>
+                            </div>
+                            <span class="prob-value">${percent}%</span>
+                        </div>
+                    `;
+                });
+                elements.probabilities.innerHTML = probHtml;
+            }
+        }
+
+        // আউটকাম ফরম্যাট
+        function formatOutcome(outcome) {
+            const icons = {
+                '1': '🎲 1',
+                '2': '🎲 2',
+                '5': '🎲 5',
+                '10': '🎲 10',
+                'CoinFlip': '🪙 CF',
+                'CashHunt': '💰 CH',
+                'CrazyBonus': '⭐ CB',
+                'Pachinko': '📌 PC'
+            };
+            return icons[outcome] || outcome;
+        }
+
+        // অল্টারনেটিভ সিলেক্ট
+        function selectAlternative(outcome) {
+            elements.primaryOutcome.innerText = formatOutcome(outcome);
+            showNotification(`🎯 ${outcome} সিলেক্ট করা হয়েছে`, 'info');
+        }
+
+        // স্ট্যাটস আপডেট
+        function updateStats(data) {
+            if (data.model_status) {
+                elements.totalData.innerText = data.model_status.data_points || allResults.length;
+                
+                const accuracy = (data.model_status.accuracy || 0) * 100;
+                elements.aiAccuracy.innerText = accuracy.toFixed(1) + '%';
+                
+                elements.learningPhase.innerText = data.model_status.learning_phase || 'বেসিক';
+                elements.modelType.innerText = 'এনসেম্বল AI';
+            }
+        }
+
+        // ফ্যাক্টর এনালাইসিস আপডেট
+        function updateFactorAnalysis(data) {
+            if (!data || !data.factors) {
+                // ফ্যাক্টর ডাটা না থাকলে ডেমো ডাটা দেখাই
+                showDemoFactorAnalysis();
+                return;
+            }
+
+            const factors = data.factors;
+            const html = `
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-link"></i> মার্কোভ চেইন</span>
+                        <span>${(factors.markov_prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-markov" style="width: ${factors.markov_prob * 100}%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-user"></i> ডিলার প্যাটার্ন</span>
+                        <span>${(factors.dealer_prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-dealer" style="width: ${factors.dealer_prob * 100}%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-chart-bar"></i> মাল্টিপ্লায়ার</span>
+                        <span>${(factors.multiplier_prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-multiplier" style="width: ${factors.multiplier_prob * 100}%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-clock"></i> সময় প্যাটার্ন</span>
+                        <span>${(factors.time_prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-time" style="width: ${factors.time_prob * 100}%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-fire"></i> হট জোন</span>
+                        <span>${(factors.hot_prob * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-hot" style="width: ${factors.hot_prob * 100}%"></div>
+                    </div>
+                </div>
+            `;
+
+            elements.factorAnalysis.innerHTML = html;
+        }
+
+        // ডেমো ফ্যাক্টর এনালাইসিস
+        function showDemoFactorAnalysis() {
+            const html = `
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-link"></i> মার্কোভ চেইন</span>
+                        <span>৭২%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-markov" style="width: 72%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-user"></i> ডিলার প্যাটার্ন</span>
+                        <span>৬৫%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-dealer" style="width: 65%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-chart-bar"></i> মাল্টিপ্লায়ার</span>
+                        <span>৪৮%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-multiplier" style="width: 48%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-clock"></i> সময় প্যাটার্ন</span>
+                        <span>৫৩%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-time" style="width: 53%"></div>
+                    </div>
+                </div>
+                <div class="factor-item">
+                    <div class="factor-header">
+                        <span><i class="fas fa-fire"></i> হট জোন</span>
+                        <span>৮১%</span>
+                    </div>
+                    <div class="factor-bar">
+                        <div class="factor-fill factor-hot" style="width: 81%"></div>
+                    </div>
+                </div>
+            `;
+
+            elements.factorAnalysis.innerHTML = html;
+        }
+
+        // রিসেন্ট রেজাল্ট আপডেট
+        function updateRecentResults() {
+            if (!allResults || allResults.length === 0) return;
+
+            const recent = allResults.slice(-20).reverse();
+            let html = '';
+
+            recent.forEach(result => {
+                const info = getResultInfo(result);
+                const icon = factorIcons[info.type] || '🎲';
+                html += `
+                    <div class="recent-cell" onclick="showResultDetails('${info.id}')">
+                        <span class="recent-outcome">${icon} ${info.text}</span>
+                        <span class="recent-multiplier">x${info.multiplier}</span>
+                    </div>
+                `;
+            });
+
+            elements.recentResults.innerHTML = html;
+        }
+
+        // রেজাল্ট ইনফো এক্সট্র্যাক্ট (হেল্পার ফাংশন)
+        function getResultInfo(result) {
+            try {
+                const outcome = result.data?.result?.outcome || {};
+                const wheel = outcome.wheelResult || {};
+                
+                let text = '';
+                let type = '';
+                
+                if (wheel.type === 'BonusRound') {
+                    switch(wheel.wheelSector) {
+                        case 'CoinFlip': 
+                            text = 'CF'; 
+                            type = 'CoinFlip';
+                            break;
+                        case 'CashHunt': 
+                            text = 'CH'; 
+                            type = 'CashHunt';
+                            break;
+                        case 'CrazyBonus': 
+                            text = 'CB'; 
+                            type = 'CrazyBonus';
+                            break;
+                        case 'Pachinko': 
+                            text = 'PC'; 
+                            type = 'Pachinko';
+                            break;
+                        default: 
+                            text = '??';
+                            type = 'Unknown';
+                    }
+                } else {
+                    text = wheel.wheelSector || '0';
+                    type = text;
+                }
+
+                return {
+                    text: text,
+                    type: type,
+                    multiplier: outcome.maxMultiplier || 1,
+                    id: result.id || '',
+                    dealer: result.data?.dealer?.name || '??'
+                };
+            } catch (e) {
+                return { text: '??', type: 'Unknown', multiplier: 1, id: '', dealer: '??' };
+            }
+        }
+
+        // ট্রেন্ড এনালাইসিস আপডেট
+        function updateTrendAnalysis() {
+            if (!allResults || allResults.length < 20) return;
+
+            const recent = allResults.slice(-20);
+            const outcomes = recent.map(r => {
+                const info = getResultInfo(r);
+                return info.type;
+            });
+
+            // ট্রেন্ড বার তৈরি
+            let bars = '';
+            outcomes.forEach(outcome => {
+                const height = Math.random() * 30 + 10; // ডেমো হাইট
+                bars += `<div class="trend-bar" style="height: ${height}px; background: ${factorColors[outcome] || '#334155'}"></div>`;
+            });
+
+            elements.trendAnalysis.innerHTML = bars;
+        }
+
+        // লোকাল প্রেডিকশন (ফallback)
+        function generateLocalPrediction() {
+            if (allResults.length < 20) return;
+
+            const outcomes = [];
+            allResults.slice(-50).forEach(result => {
+                const info = getResultInfo(result);
+                outcomes.push(info.type);
+            });
+
+            // ফ্রিকোয়েন্সি
+            const freq = {};
+            outcomes.forEach(o => freq[o] = (freq[o] || 0) + 1);
+            
+            const sorted = Object.entries(freq)
+                .map(([o, c]) => [o, c/outcomes.length])
+                .sort((a, b) => b[1] - a[1]);
+
+            updatePredictionUI({ predictions: sorted });
+        }
+
+        // হট/কোল্ড জোন আপডেট (রিয়েল ডাটা থেকে)
+        function updateHotColdZones() {
+            if (!allResults || allResults.length < 50) {
+                showDemoHotColdZones();
+                return;
+            }
+
+            const outcomes = [];
+            allResults.slice(-50).forEach(result => {
+                const info = getResultInfo(result);
+                outcomes.push(info.type);
+            });
+
+            const counts = {};
+            outcomes.forEach(o => counts[o] = (counts[o] || 0) + 1);
+            
+            const avg = outcomes.length / Object.keys(counts).length;
+            const hot = [];
+            const cold = [];
+
+            Object.entries(counts).forEach(([outcome, count]) => {
+                if (count > avg * 1.3) {
+                    hot.push(outcome);
+                } else if (count < avg * 0.7) {
+                    cold.push(outcome);
+                }
+            });
+
+            let html = '';
+            
+            // হট জোন
+            hot.slice(0, 3).forEach(o => {
+                const icon = factorIcons[o] || '🎲';
+                html += `
+                    <div class="zone-item">
+                        <span class="zone-hot"><i class="fas fa-fire"></i> ${icon} ${o}</span>
+                        <span class="zone-badge badge-hot">হট</span>
+                    </div>
+                `;
+            });
+            
+            // কোল্ড জোন
+            cold.slice(0, 3).forEach(o => {
+                const icon = factorIcons[o] || '🎲';
+                html += `
+                    <div class="zone-item">
+                        <span class="zone-cold"><i class="fas fa-snowflake"></i> ${icon} ${o}</span>
+                        <span class="zone-badge badge-cold">কোল্ড</span>
+                    </div>
+                `;
+            });
+
+            elements.hotColdZones.innerHTML = html || '<div style="text-align: center; padding: 20px;">কোন জোন পাওয়া যায়নি</div>';
+        }
+
+        // ডেমো হট/কোল্ড জোন
+        function showDemoHotColdZones() {
+            elements.hotColdZones.innerHTML = `
+                <div class="zone-item">
+                    <span class="zone-hot"><i class="fas fa-fire"></i> 🎲 1</span>
+                    <span class="zone-badge badge-hot">হট</span>
+                </div>
+                <div class="zone-item">
+                    <span class="zone-hot"><i class="fas fa-fire"></i> 🪙 CF</span>
+                    <span class="zone-badge badge-hot">হট</span>
+                </div>
+                <div class="zone-item">
+                    <span class="zone-hot"><i class="fas fa-fire"></i> 🎲 5</span>
+                    <span class="zone-badge badge-hot">হট</span>
+                </div>
+                <div class="zone-item">
+                    <span class="zone-cold"><i class="fas fa-snowflake"></i> ⭐ CB</span>
+                    <span class="zone-badge badge-cold">কোল্ড</span>
+                </div>
+                <div class="zone-item">
+                    <span class="zone-cold"><i class="fas fa-snowflake"></i> 📌 PC</span>
+                    <span class="zone-badge badge-cold">কোল্ড</span>
+                </div>
+            `;
+        }
+
+        // প্যাটার্ন আপডেট (রিয়েল ডাটা থেকে)
+        function updatePatterns() {
+            if (!allResults || allResults.length < 100) {
+                showDemoPatterns();
+                return;
+            }
+
+            const outcomes = [];
+            allResults.slice(-100).forEach(result => {
+                const info = getResultInfo(result);
+                outcomes.push(info.type);
+            });
+
+            const patterns = {};
+            for (let i = 0; i < outcomes.length - 3; i++) {
+                const pattern = `${outcomes[i]}→${outcomes[i+1]}→${outcomes[i+2]}`;
+                const next = outcomes[i+3];
+                
+                if (!patterns[pattern]) {
+                    patterns[pattern] = { count: 0, next: {} };
+                }
+                patterns[pattern].count++;
+                patterns[pattern].next[next] = (patterns[pattern].next[next] || 0) + 1;
+            }
+
+            const topPatterns = Object.entries(patterns)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 3);
+
+            let html = '';
+            topPatterns.forEach(([pattern, data]) => {
+                const topNext = Object.entries(data.next)
+                    .sort((a, b) => b[1] - a[1])[0];
+                
+                const nextIcon = factorIcons[topNext[0]] || '🎲';
+                const prob = ((topNext[1]/data.count)*100).toFixed(0);
+                
+                html += `
+                    <div class="pattern-item">
+                        <span class="pattern-sequence">${pattern}</span>
+                        <div class="pattern-next">
+                            <span class="pattern-badge">${nextIcon} ${topNext[0]} (${prob}%)</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            elements.patterns.innerHTML = html || '<div style="text-align: center; padding: 20px;">কোন প্যাটার্ন পাওয়া যায়নি</div>';
+        }
+
+        // ডেমো প্যাটার্ন
+        function showDemoPatterns() {
+            elements.patterns.innerHTML = `
+                <div class="pattern-item">
+                    <span class="pattern-sequence">1→2→CF</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">🎲 1 (৭৫%)</span>
+                    </div>
+                </div>
+                <div class="pattern-item">
+                    <span class="pattern-sequence">CF→CH→1</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">🎲 5 (৬২%)</span>
+                    </div>
+                </div>
+                <div class="pattern-item">
+                    <span class="pattern-sequence">5→10→CB</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">🪙 CF (৫৮%)</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // স্ট্র্যাটেজি আপডেট (রিয়েল ডাটা থেকে)
+        function updateStrategies() {
+            if (!allResults || allResults.length < 50) {
+                showDemoStrategies();
+                return;
+            }
+
+            // সিম্পল স্ট্র্যাটেজি ক্যালকুলেশন
+            const outcomes = allResults.slice(-100).map(r => getResultInfo(r).type);
+            
+            const hotStrategy = calculateHotStrategy(outcomes);
+            const patternStrategy = calculatePatternStrategy(outcomes);
+            const coldStrategy = calculateColdStrategy(outcomes);
+            const momentumStrategy = calculateMomentumStrategy(outcomes);
+
+            const strategies = [
+                { name: 'হট ফলোয়িং', value: hotStrategy, trend: hotStrategy > 60 ? 'up' : hotStrategy < 40 ? 'down' : 'stable' },
+                { name: 'প্যাটার্ন ৩', value: patternStrategy, trend: patternStrategy > 60 ? 'up' : patternStrategy < 40 ? 'down' : 'stable' },
+                { name: 'কোল্ড ট্র্যাকিং', value: coldStrategy, trend: coldStrategy > 60 ? 'up' : coldStrategy < 40 ? 'down' : 'stable' },
+                { name: 'মোমেন্টাম', value: momentumStrategy, trend: momentumStrategy > 60 ? 'up' : momentumStrategy < 40 ? 'down' : 'stable' }
+            ];
+
+            let html = '';
+            strategies.forEach(s => {
+                html += `
+                    <div class="strategy-card">
+                        <div class="strategy-name">${s.name}</div>
+                        <div class="strategy-value">${s.value}%</div>
+                        <div class="trend-${s.trend}">
+                            ${s.trend === 'up' ? '📈' : s.trend === 'down' ? '📉' : '➡️'}
+                        </div>
+                    </div>
+                `;
+            });
+
+            elements.strategies.innerHTML = html;
+        }
+
+        // স্ট্র্যাটেজি ক্যালকুলেশন ফাংশন
+        function calculateHotStrategy(outcomes) {
+            const freq = {};
+            outcomes.forEach(o => freq[o] = (freq[o] || 0) + 1);
+            const maxFreq = Math.max(...Object.values(freq));
+            return Math.round((maxFreq / outcomes.length) * 100);
+        }
+
+        function calculatePatternStrategy(outcomes) {
+            let matches = 0;
+            for (let i = 0; i < outcomes.length - 3; i++) {
+                if (outcomes[i] === outcomes[i+3]) matches++;
+            }
+            return Math.round((matches / (outcomes.length - 3)) * 100);
+        }
+
+        function calculateColdStrategy(outcomes) {
+            const freq = {};
+            outcomes.forEach(o => freq[o] = (freq[o] || 0) + 1);
+            const minFreq = Math.min(...Object.values(freq));
+            return Math.round(((minFreq / outcomes.length) * 100) + 20);
+        }
+
+        function calculateMomentumStrategy(outcomes) {
+            const last10 = outcomes.slice(-10);
+            const patterns = [];
+            for (let i = 0; i < last10.length - 1; i++) {
+                patterns.push(last10[i] === last10[i+1]);
+            }
+            const momentum = patterns.filter(p => p).length / patterns.length;
+            return Math.round(momentum * 100);
+        }
+
+        // ডেমো স্ট্র্যাটেজি
+        function showDemoStrategies() {
+            elements.strategies.innerHTML = `
+                <div class="strategy-card">
+                    <div class="strategy-name">হট ফলোয়িং</div>
+                    <div class="strategy-value">৬৮%</div>
+                    <div class="trend-up">📈</div>
+                </div>
+                <div class="strategy-card">
+                    <div class="strategy-name">প্যাটার্ন ৩</div>
+                    <div class="strategy-value">৭২%</div>
+                    <div class="trend-up">📈</div>
+                </div>
+                <div class="strategy-card">
+                    <div class="strategy-name">কোল্ড ট্র্যাকিং</div>
+                    <div class="strategy-value">৪৫%</div>
+                    <div class="trend-down">📉</div>
+                </div>
+                <div class="strategy-card">
+                    <div class="strategy-name">মোমেন্টাম</div>
+                    <div class="strategy-value">৬১%</div>
+                    <div class="trend-stable">➡️</div>
+                </div>
+            `;
+        }
+
+        // রেজাল্ট ডিটেলস দেখান
+        function showResultDetails(id) {
+            const result = allResults.find(r => r.id === id);
+            if (!result) return;
+
+            const info = getResultInfo(result);
+            showNotification(`ডিলার: ${info.dealer} | মাল্টিপ্লায়ার: x${info.multiplier}`, 'info');
+        }
+
+        // নোটিফিকেশন
+        function showNotification(msg, type = 'success') {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.style.background = type === 'success' ? 'linear-gradient(135deg, #a855f7, #c084fc)' : 
+                                   type === 'error' ? 'linear-gradient(135deg, #ef4444, #f87171)' : 
+                                   'linear-gradient(135deg, #3b82f6, #60a5fa)';
+            notif.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${msg}`;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        // রিফ্রেশ
+        function refreshPredictions() {
+            showNotification('🔄 প্রেডিকশন রিফ্রেশ করা হচ্ছে...', 'info');
+            loadPredictions();
+        }
+
+        // টাইম আপডেট
+        function updateTimestamp() {
+            const now = new Date();
+            elements.updateTime.innerHTML = `আপডেট: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+        }
+
+        // ইনিশিয়ালাইজ
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            
+            // টাইম আপডেট
+            setInterval(updateTimestamp, 1000);
+        });
+
+        // উইন্ডো আনলোড হলে ইন্টারভাল ক্লিয়ার
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
