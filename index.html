@@ -779,120 +779,167 @@
         
         // ==================== API কল ফাংশন ====================
         async function fetchServerData() {
-            try {
-                elements.loadingMessage.innerHTML = 'সার্ভার থেকে ডাটা আনা হচ্ছে...';
-                
-                const response = await fetch('/api/crazytime?page=0&size=5000');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                const totalCount = response.headers.get('X-Total-Count');
-                
-                console.log(`📡 সার্ভার থেকে ${data.length} টি রেজাল্ট আনা হয়েছে`);
-                
-                if (data.length > 0) {
-                    // ডাটা সর্ট (পুরোনো → নতুন)
-                    data.sort((a, b) => {
-                        const timeA = new Date(a.data?.settledAt || 0).getTime();
-                        const timeB = new Date(b.data?.settledAt || 0).getTime();
-                        return timeA - timeB;
-                    });
-                    
-                    allResults = data;
-                    filteredResults = [...allResults];
-                    lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
-                    
-                    saveToStorage();
-                    
-                    elements.status.innerHTML = `✅ সার্ভার থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
-                    
-                    // AI স্ট্যাটাস চেক
-                    fetchAIStatus();
-                    
-                    displayGrid();
-                    updateQuickStats();
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                elements.status.innerHTML = '❌ সার্ভার থেকে ডাটা লোড করতে সমস্যা';
-                
-                // ক্যাশ থেকে লোড
-                const cached = loadFromStorage();
-                if (cached.length > 0) {
-                    allResults = cached;
-                    filteredResults = [...allResults];
-                    displayGrid();
-                    updateQuickStats();
-                    elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
-                }
-            }
+    try {
+        elements.loadingMessage.innerHTML = 'সার্ভার থেকে ডাটা আনা হচ্ছে...';
+        
+        const response = await fetch('/api/crazytime?page=0&size=5000');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
         
-        async function fetchAIStatus() {
-            try {
-                const response = await fetch('/api/predictions');
-                const data = await response.json();
-                
-                if (data.model && data.model.accuracy) {
-                    aiAccuracy = data.model.accuracy;
-                    elements.aiAccuracy.innerHTML = `${(aiAccuracy * 100).toFixed(1)}%`;
-                }
-                
-                if (data.model && data.model.total_spins) {
-                    elements.aiStatus.innerHTML = `🧠 AI: ${data.model.total_spins} স্পিন শিখেছে`;
-                }
-                
-            } catch (error) {
-                console.error('AI স্ট্যাটাস পেতে সমস্যা:', error);
-            }
-        }
+        const data = await response.json();
+        const totalCount = response.headers.get('X-Total-Count');
         
-        async function checkForNewData() {
-            try {
-                const response = await fetch('/api/crazytime/latest');
-                const latestData = await response.json();
-                
-                if (latestData && latestData.id) {
-                    const exists = allResults.some(r => r.id === latestData.id);
-                    
-                    if (!exists && latestData.data?.settledAt) {
-                        console.log('✅ নতুন ডাটা পাওয়া গেছে!');
-                        
-                        allResults.push(latestData);
-                        
-                        // রিসর্ট
-                        allResults.sort((a, b) => {
-                            const timeA = new Date(a.data?.settledAt || 0).getTime();
-                            const timeB = new Date(b.data?.settledAt || 0).getTime();
-                            return timeA - timeB;
-                        });
-                        
-                        saveToStorage();
-                        filteredResults = [...allResults];
-                        
-                        elements.status.innerHTML = `✅ +১ টি নতুন রেজাল্ট (মোট ${allResults.length})`;
-                        
-                        displayGrid();
-                        updateQuickStats();
-                    }
-                }
-            } catch (error) {
-                // সাইলেন্ট ফেইল
-            }
-        }
+        console.log(`📡 সার্ভার থেকে ${data.length} টি রেজাল্ট আনা হয়েছে`);
         
-        function refreshData() {
-            elements.loadingSpinner.style.display = 'block';
-            fetchServerData().finally(() => {
-                setTimeout(() => {
-                    elements.loadingSpinner.style.display = 'none';
-                }, 500);
+        if (data.length > 0) {
+            // ডাটা সর্ট (পুরোনো → নতুন)
+            data.sort((a, b) => {
+                const timeA = new Date(a.data?.settledAt || 0).getTime();
+                const timeB = new Date(b.data?.settledAt || 0).getTime();
+                return timeA - timeB;
             });
+            
+            allResults = data;
+            filteredResults = [...allResults];
+            lastSettledAt = allResults[allResults.length - 1]?.data?.settledAt;
+            
+            // localStorage-এ সেভ করুন
+            saveToStorage();
+            
+            elements.status.innerHTML = `✅ সার্ভার থেকে ${allResults.length} টি রেজাল্ট লোড হয়েছে`;
+            elements.totalCount.textContent = allResults.length;
+            
+            // স্টোরেজ ইনফো আপডেট
+            updateStorageInfo();
+            
+            // AI স্ট্যাটাস চেক
+            fetchAIStatus();
+            
+            displayGrid();
+            updateQuickStats();
         }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        elements.status.innerHTML = '❌ সার্ভার থেকে ডাটা লোড করতে সমস্যা';
+        
+        // ক্যাশ থেকে লোড
+        const cached = loadFromStorage();
+        if (cached.length > 0) {
+            allResults = cached;
+            filteredResults = [...allResults];
+            displayGrid();
+            updateQuickStats();
+            elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
+            elements.totalCount.textContent = allResults.length;
+            updateStorageInfo();
+        }
+    }
+}
+
+// saveToStorage ফাংশন আপডেট করুন
+function saveToStorage() {
+    try {
+        const dataToSave = {
+            results: allResults,
+            timestamp: new Date().toISOString(),
+            totalCount: allResults.length
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        
+        const metaInfo = {
+            lastUpdate: new Date().toLocaleString('bn-BD'),
+            count: allResults.length,
+            cacheDate: new Date().toLocaleString()
+        };
+        localStorage.setItem(STORAGE_META_KEY, JSON.stringify(metaInfo));
+        
+        console.log(`✅ localStorage-এ ${allResults.length} টি ডাটা সেভ হয়েছে`);
+        updateStorageInfo();
+    } catch (error) {
+        console.error('স্টোরেজে সেভ করতে সমস্যা:', error);
+    }
+}
+
+// loadFromStorage ফাংশন আপডেট করুন
+function loadFromStorage() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+            console.log('📭 localStorage এ কোন ডাটা নেই');
+            return [];
+        }
+        
+        const parsed = JSON.parse(saved);
+        console.log('📦 localStorage থেকে পাওয়া ডাটা:', parsed);
+        
+        if (parsed.results && Array.isArray(parsed.results)) {
+            console.log(`✅ results[] থেকে ${parsed.results.length} টি ডাটা নেওয়া হল`);
+            return parsed.results;
+        } else if (Array.isArray(parsed)) {
+            console.log(`✅ সরাসরি অ্যারে থেকে ${parsed.length} টি ডাটা নেওয়া হল`);
+            return parsed;
+        }
+        return [];
+    } catch (error) {
+        console.error('স্টোরেজ থেকে লোড করতে সমস্যা:', error);
+        return [];
+    }
+}
+
+// updateStorageInfo ফাংশন আপডেট করুন
+function updateStorageInfo() {
+    try {
+        const meta = localStorage.getItem(STORAGE_META_KEY);
+        if (meta) {
+            const data = JSON.parse(meta);
+            elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${data.count} টি (${data.cacheDate})`;
+            console.log(`📊 স্টোরেজ ইনফো: ${data.count} টি ডাটা`);
+        } else {
+            elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
+            console.log(`📊 স্টোরেজ ইনফো: ${allResults.length} টি ডাটা`);
+        }
+    } catch (error) {
+        elements.storageInfo.innerHTML = `📦 লোকাল ক্যাশ: ${allResults.length} টি`;
+    }
+}
+
+// DOMContentLoaded ইভেন্ট আপডেট করুন
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📋 DOM লোড হয়েছে, localStorage চেক করা হচ্ছে...');
+    
+    // localStorage ক্লিয়ার করুন (ডিবাগের জন্য)
+    // localStorage.clear(); // এই লাইনটি কমেন্ট করা আছে
+    
+    // ক্যাশ থেকে লোড
+    const cached = loadFromStorage();
+    if (cached.length > 0) {
+        allResults = cached;
+        filteredResults = [...allResults];
+        displayGrid();
+        updateQuickStats();
+        elements.status.innerHTML = `📦 ক্যাশ থেকে ${allResults.length} টি রেজাল্ট দেখানো হচ্ছে`;
+        elements.totalCount.textContent = allResults.length;
+        updateStorageInfo();
+        console.log(`✅ ক্যাশ থেকে ${allResults.length} টি ডাটা লোড হয়েছে`);
+    } else {
+        console.log('⚠️ ক্যাশে কোন ডাটা নেই, সার্ভার থেকে লোড হবে');
+        elements.status.innerHTML = '🔄 সার্ভার থেকে ডাটা লোড হচ্ছে...';
+    }
+    
+    // সার্ভার থেকে ফ্রেশ ডাটা
+    fetchServerData();
+    
+    // প্রতি ৫ সেকেন্ডে নতুন ডাটা চেক
+    setInterval(checkForNewData, 5000);
+    
+    // প্রতি সেকেন্ডে টাইম আপডেট
+    setInterval(() => {
+        elements.updateTime.innerHTML = `⏱️ সর্বশেষ আপডেট: ${new Date().toLocaleTimeString('bn-BD')}`;
+    }, 1000);
+});
         
         // ==================== গ্রিড ডিসপ্লে ====================
         function displayGrid() {
