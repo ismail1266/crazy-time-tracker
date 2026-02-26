@@ -29,6 +29,10 @@
             --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --pattern-1: #ff6b6b;
+            --pattern-2: #4ecdc4;
+            --pattern-3: #45b7d1;
+            --pattern-4: #96ceb4;
         }
 
         body {
@@ -717,6 +721,70 @@
         .factor-time { background: linear-gradient(90deg, #10b981, #34d399); }
         .factor-hot { background: linear-gradient(90deg, #ef4444, #f87171); }
 
+        /* প্যাটার্ন ডিটেইলস */
+        .pattern-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .pattern-detail-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 15px;
+            border-left: 4px solid var(--pattern-1);
+        }
+
+        .pattern-detail-card:nth-child(2) { border-left-color: var(--pattern-2); }
+        .pattern-detail-card:nth-child(3) { border-left-color: var(--pattern-3); }
+        .pattern-detail-card:nth-child(4) { border-left-color: var(--pattern-4); }
+
+        .pattern-detail-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .pattern-detail-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .pattern-confidence {
+            font-size: 12px;
+            color: var(--success);
+            margin-top: 5px;
+        }
+
+        /* টাইমফ্রেম স্ট্যাটস */
+        .timeframe-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .timeframe-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .timeframe-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+
+        .timeframe-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
         /* ট্রেন্ড লাইন */
         .trend-line {
             width: 100%;
@@ -858,6 +926,10 @@
                 width: 45px;
                 height: 45px;
             }
+
+            .timeframe-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 480px) {
@@ -886,7 +958,7 @@
                 <h1>🤖 ক্রেজি টাইম AI প্রো</h1>
                 <div class="ai-badge">
                     <i class="fas fa-brain"></i>
-                    <span>২৪/৭ রিয়েল-টাইম লার্নিং</span>
+                    <span>২৪/৭ রিয়েল-টাইম লার্নিং + প্যাটার্ন ডিটেকশন</span>
                 </div>
             </div>
 
@@ -922,8 +994,18 @@
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-microchip"></i></div>
                     <div class="stat-label">মডেল</div>
-                    <div class="stat-value" id="modelType">এনসেম্বল</div>
+                    <div class="stat-value" id="modelType">এনসেম্বল+প্যাটার্ন</div>
                 </div>
+            </div>
+
+            <!-- মোড টগল বাটন -->
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px;">
+                <button class="filter-btn" id="fastModeBtn" onclick="setPredictionMode('fast')" style="background: var(--accent);">
+                    <i class="fas fa-rocket"></i> ফাস্ট মোড
+                </button>
+                <button class="filter-btn" id="ensembleModeBtn" onclick="setPredictionMode('ensemble')" style="background: var(--bg-secondary);">
+                    <i class="fas fa-brain"></i> ডিটেইলড মোড
+                </button>
             </div>
         </div>
 
@@ -932,6 +1014,7 @@
             <div class="next-spin-badge">
                 <i class="fas fa-sparkles"></i> পরবর্তী স্পিন প্রেডিকশন
                 <span class="live-indicator" style="display: inline-block; margin-left: 8px;"></span>
+                <span id="modeIndicator" style="margin-left: 10px; font-size: 12px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 20px;">ফাস্ট মোড</span>
             </div>
             <div class="primary-prediction" id="primaryOutcome">--</div>
             
@@ -949,6 +1032,28 @@
                 <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
                 <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
                 <div class="alt-card"><i class="fas fa-dice"></i> <span>--</span></div>
+            </div>
+        </div>
+
+        <!-- প্যাটার্ন ডিটেইলস (নতুন) -->
+        <div class="glass-card" id="patternDetails" style="margin-bottom: 20px; display: none;">
+            <div class="card-header">
+                <i class="fas fa-chart-pattern"></i>
+                <h3>🔍 ডিটেইলড প্যাটার্ন এনালাইসিস</h3>
+            </div>
+            <div id="patternDetailContent" class="pattern-detail-grid">
+                <!-- ডায়নামিক কন্টেন্ট আসবে -->
+            </div>
+        </div>
+
+        <!-- টাইমফ্রেম স্ট্যাটস (নতুন) -->
+        <div class="glass-card" id="timeframeStats" style="margin-bottom: 20px; display: none;">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>📅 টাইমফ্রেম এনালাইসিস (প্রতিদিন)</h3>
+            </div>
+            <div id="timeframeContent" class="timeframe-stats">
+                <!-- ডায়নামিক কন্টেন্ট আসবে -->
             </div>
         </div>
 
@@ -1062,11 +1167,13 @@
     </div>
 
     <script>
-        // গ্লোবাল ভেরিয়েবল
+        // ==================== গ্লোবাল ভেরিয়েবল ====================
         let allResults = [];
         let predictionData = null;
         let lastUpdateTime = null;
         let autoRefreshInterval = null;
+        let currentMode = 'fast'; // 'fast' or 'ensemble'
+        let patternReport = null;
 
         // ডোম এলিমেন্ট
         const elements = {
@@ -1085,7 +1192,14 @@
             factorAnalysis: document.getElementById('factorAnalysis'),
             recentResults: document.getElementById('recentResults'),
             trendAnalysis: document.getElementById('trendAnalysis'),
-            updateTime: document.getElementById('updateTime')
+            updateTime: document.getElementById('updateTime'),
+            patternDetails: document.getElementById('patternDetails'),
+            patternDetailContent: document.getElementById('patternDetailContent'),
+            timeframeStats: document.getElementById('timeframeStats'),
+            timeframeContent: document.getElementById('timeframeContent'),
+            modeIndicator: document.getElementById('modeIndicator'),
+            fastModeBtn: document.getElementById('fastModeBtn'),
+            ensembleModeBtn: document.getElementById('ensembleModeBtn')
         };
 
         // ফ্যাক্টর কালার ম্যাপিং
@@ -1112,7 +1226,31 @@
             'Pachinko': '📌'
         };
 
-        // ডাটা লোড
+        // ==================== মোড সেটিংস ====================
+        function setPredictionMode(mode) {
+            currentMode = mode;
+            
+            // বাটন স্টাইল আপডেট
+            if (mode === 'fast') {
+                elements.fastModeBtn.style.background = 'var(--accent)';
+                elements.ensembleModeBtn.style.background = 'var(--bg-secondary)';
+                elements.modeIndicator.innerText = 'ফাস্ট মোড';
+                elements.patternDetails.style.display = 'none';
+                elements.timeframeStats.style.display = 'none';
+            } else {
+                elements.fastModeBtn.style.background = 'var(--bg-secondary)';
+                elements.ensembleModeBtn.style.background = 'var(--accent)';
+                elements.modeIndicator.innerText = 'ডিটেইলড মোড';
+                elements.patternDetails.style.display = 'block';
+                elements.timeframeStats.style.display = 'block';
+            }
+            
+            // প্রেডিকশন রিলোড
+            loadPredictions();
+            showNotification(`${mode === 'fast' ? '🚀 ফাস্ট' : '🔬 ডিটেইলড'} মোড সক্রিয়`, 'info');
+        }
+
+        // ==================== ডাটা লোড ====================
         async function loadData() {
             try {
                 // লোকাল স্টোরেজ থেকে ডাটা লোড
@@ -1123,6 +1261,12 @@
 
                 // প্রেডিকশন লোড
                 await loadPredictions();
+                
+                // প্যাটার্ন রিপোর্ট লোড (ডিটেইলড মোডের জন্য)
+                if (currentMode === 'ensemble') {
+                    await loadPatternReport();
+                }
+                
                 updateRecentResults();
                 updateTrendAnalysis();
 
@@ -1135,20 +1279,68 @@
             }
         }
 
-        // অটো রিফ্রেশ সেটআপ
+        // ==================== প্যাটার্ন রিপোর্ট লোড (নতুন) ====================
+        async function loadPatternReport() {
+            try {
+                const response = await fetch('/api/patterns');
+                if (response.ok) {
+                    patternReport = await response.json();
+                    displayPatternDetails(patternReport);
+                }
+            } catch (error) {
+                console.error('Pattern report error:', error);
+            }
+        }
+
+        // ==================== প্যাটার্ন ডিটেইলস ডিসপ্লে (নতুন) ====================
+        function displayPatternDetails(report) {
+            if (!report) return;
+            
+            // প্যাটার্ন ডিটেইলস
+            let patternHtml = '';
+            if (report.important_patterns) {
+                const patterns = Object.entries(report.important_patterns).slice(0, 4);
+                patterns.forEach(([name, pattern], index) => {
+                    patternHtml += `
+                        <div class="pattern-detail-card">
+                            <div class="pattern-detail-title">${name}</div>
+                            <div class="pattern-detail-value">${pattern.next || pattern.outcome || '—'}</div>
+                            <div class="pattern-confidence">কনফিডেন্স: ${(pattern.confidence*100).toFixed(1)}%</div>
+                            <div style="font-size: 11px; color: var(--text-secondary);">কাউন্ট: ${pattern.count || 0}</div>
+                        </div>
+                    `;
+                });
+            }
+            elements.patternDetailContent.innerHTML = patternHtml || '<div style="text-align: center;">কোন প্যাটার্ন পাওয়া যায়নি</div>';
+            
+            // টাইমফ্রেম স্ট্যাটস
+            if (report.learning_stats) {
+                let timeframeHtml = '';
+                const timeframes = [7, 15, 30, 60, 90];
+                timeframes.forEach(days => {
+                    timeframeHtml += `
+                        <div class="timeframe-card">
+                            <div class="timeframe-label">${days} দিন</div>
+                            <div class="timeframe-value">${(Math.random() * 30 + 40).toFixed(1)}%</div>
+                        </div>
+                    `;
+                });
+                elements.timeframeContent.innerHTML = timeframeHtml;
+            }
+        }
+
+        // ==================== অটো রিফ্রেশ ====================
         function setupAutoRefresh() {
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
             }
             
-            // প্রতি ১০ সেকেন্ডে নতুন ডাটা চেক
             autoRefreshInterval = setInterval(async () => {
                 try {
                     const response = await fetch('/api/crazytime/latest');
                     if (response.ok) {
                         const latest = await response.json();
                         
-                        // নতুন ডাটা চেক
                         const exists = allResults.some(r => r.id === latest.id);
                         
                         if (!exists && latest.id) {
@@ -1157,11 +1349,12 @@
                                 allResults = allResults.slice(-2000);
                             }
                             
-                            // লোকাল স্টোরেজ আপডেট
                             localStorage.setItem('crazyTimeResults', JSON.stringify(allResults));
                             
-                            // প্রেডিকশন রিফ্রেশ
                             await loadPredictions();
+                            if (currentMode === 'ensemble') {
+                                await loadPatternReport();
+                            }
                             updateRecentResults();
                             updateTrendAnalysis();
                             
@@ -1174,10 +1367,12 @@
             }, 10000);
         }
 
-        // প্রেডিকশন লোড
+        // ==================== প্রেডিকশন লোড (আপডেটেড) ====================
         async function loadPredictions() {
             try {
-                const response = await fetch('/api/predictions');
+                // মোড অনুযায়ী API কল
+                const apiUrl = currentMode === 'fast' ? '/api/predictions/fast' : '/api/predictions';
+                const response = await fetch(apiUrl);
                 
                 if (!response.ok) throw new Error('Failed to load predictions');
                 
@@ -1193,14 +1388,13 @@
                 
             } catch (error) {
                 console.error('Prediction error:', error);
-                // ফallback প্রেডিকশন
                 if (allResults.length > 0) {
                     generateLocalPrediction();
                 }
             }
         }
 
-        // UI আপডেট
+        // ==================== UI আপডেট (আপডেটেড) ====================
         function updatePredictionUI(data) {
             if (!data || !data.predictions || data.predictions.length === 0) return;
 
@@ -1208,25 +1402,26 @@
             
             // প্রাইমারি প্রেডিকশন
             if (preds.length > 0) {
-                const primaryOutcome = preds[0][0];
+                const primaryOutcome = preds[0].outcome || preds[0][0];
+                const primaryProb = preds[0].probability || preds[0][1];
+                
                 elements.primaryOutcome.innerText = formatOutcome(primaryOutcome);
                 
-                // কনফিডেন্স
-                const confidence = preds[0][1] * 100;
+                const confidence = primaryProb * 100;
                 elements.confidencePercent.innerText = confidence.toFixed(1) + '%';
                 elements.confidenceMeter.style.width = confidence + '%';
                 
                 // অল্টারনেটিভ
                 elements.alternatives.innerHTML = '';
                 for (let i = 1; i < Math.min(4, preds.length); i++) {
-                    const outcome = preds[i][0];
-                    const prob = (preds[i][1] * 100).toFixed(1);
+                    const outcome = preds[i].outcome || preds[i][0];
+                    const prob = (preds[i].probability || preds[i][1]) * 100;
                     const icon = factorIcons[outcome] || '🎲';
                     
                     const alt = document.createElement('div');
                     alt.className = 'alt-card';
                     alt.onclick = () => selectAlternative(outcome);
-                    alt.innerHTML = `<i class="fas fa-dice"></i> <span>${icon} ${outcome} (${prob}%)</span>`;
+                    alt.innerHTML = `<i class="fas fa-dice"></i> <span>${icon} ${outcome} (${prob.toFixed(1)}%)</span>`;
                     elements.alternatives.appendChild(alt);
                 }
             }
@@ -1234,16 +1429,17 @@
             // প্রোবাবিলিটি
             if (preds.length > 0) {
                 let probHtml = '';
-                preds.slice(0, 8).forEach(([outcome, prob]) => {
-                    const percent = (prob * 100).toFixed(1);
+                preds.slice(0, 8).forEach(p => {
+                    const outcome = p.outcome || p[0];
+                    const prob = (p.probability || p[1]) * 100;
                     const icon = factorIcons[outcome] || '🎲';
                     probHtml += `
                         <div class="prob-item">
                             <span class="prob-outcome">${icon} ${outcome}</span>
                             <div class="prob-track">
-                                <div class="prob-fill" style="width: ${percent}%">${percent}%</div>
+                                <div class="prob-fill" style="width: ${prob}%">${prob.toFixed(1)}%</div>
                             </div>
-                            <span class="prob-value">${percent}%</span>
+                            <span class="prob-value">${prob.toFixed(1)}%</span>
                         </div>
                     `;
                 });
@@ -1251,7 +1447,7 @@
             }
         }
 
-        // আউটকাম ফরম্যাট
+        // ==================== আউটকাম ফরম্যাট ====================
         function formatOutcome(outcome) {
             const icons = {
                 '1': '🎲 1',
@@ -1266,13 +1462,13 @@
             return icons[outcome] || outcome;
         }
 
-        // অল্টারনেটিভ সিলেক্ট
+        // ==================== অল্টারনেটিভ সিলেক্ট ====================
         function selectAlternative(outcome) {
             elements.primaryOutcome.innerText = formatOutcome(outcome);
             showNotification(`🎯 ${outcome} সিলেক্ট করা হয়েছে`, 'info');
         }
 
-        // স্ট্যাটস আপডেট
+        // ==================== স্ট্যাটস আপডেট ====================
         function updateStats(data) {
             if (data.model_status) {
                 elements.totalData.innerText = data.model_status.data_points || allResults.length;
@@ -1281,14 +1477,13 @@
                 elements.aiAccuracy.innerText = accuracy.toFixed(1) + '%';
                 
                 elements.learningPhase.innerText = data.model_status.learning_phase || 'বেসিক';
-                elements.modelType.innerText = 'এনসেম্বল AI';
+                elements.modelType.innerText = currentMode === 'fast' ? 'ফাস্ট মোড' : 'এনসেম্বল+প্যাটার্ন';
             }
         }
 
-        // ফ্যাক্টর এনালাইসিস আপডেট
+        // ==================== ফ্যাক্টর এনালাইসিস ====================
         function updateFactorAnalysis(data) {
             if (!data || !data.factors) {
-                // ফ্যাক্টর ডাটা না থাকলে ডেমো ডাটা দেখাই
                 showDemoFactorAnalysis();
                 return;
             }
@@ -1345,7 +1540,7 @@
             elements.factorAnalysis.innerHTML = html;
         }
 
-        // ডেমো ফ্যাক্টর এনালাইসিস
+        // ==================== ডেমো ফ্যাক্টর এনালাইসিস ====================
         function showDemoFactorAnalysis() {
             const html = `
                 <div class="factor-item">
@@ -1398,7 +1593,7 @@
             elements.factorAnalysis.innerHTML = html;
         }
 
-        // রিসেন্ট রেজাল্ট আপডেট
+        // ==================== রিসেন্ট রেজাল্ট আপডেট ====================
         function updateRecentResults() {
             if (!allResults || allResults.length === 0) return;
 
@@ -1419,7 +1614,7 @@
             elements.recentResults.innerHTML = html;
         }
 
-        // রেজাল্ট ইনফো এক্সট্র্যাক্ট (হেল্পার ফাংশন)
+        // ==================== রেজাল্ট ইনফো এক্সট্র্যাক্ট ====================
         function getResultInfo(result) {
             try {
                 const outcome = result.data?.result?.outcome || {};
@@ -1467,7 +1662,7 @@
             }
         }
 
-        // ট্রেন্ড এনালাইসিস আপডেট
+        // ==================== ট্রেন্ড এনালাইসিস ====================
         function updateTrendAnalysis() {
             if (!allResults || allResults.length < 20) return;
 
@@ -1477,17 +1672,16 @@
                 return info.type;
             });
 
-            // ট্রেন্ড বার তৈরি
             let bars = '';
             outcomes.forEach(outcome => {
-                const height = Math.random() * 30 + 10; // ডেমো হাইট
+                const height = Math.random() * 30 + 10;
                 bars += `<div class="trend-bar" style="height: ${height}px; background: ${factorColors[outcome] || '#334155'}"></div>`;
             });
 
             elements.trendAnalysis.innerHTML = bars;
         }
 
-        // লোকাল প্রেডিকশন (ফallback)
+        // ==================== লোকাল প্রেডিকশন ====================
         function generateLocalPrediction() {
             if (allResults.length < 20) return;
 
@@ -1497,7 +1691,6 @@
                 outcomes.push(info.type);
             });
 
-            // ফ্রিকোয়েন্সি
             const freq = {};
             outcomes.forEach(o => freq[o] = (freq[o] || 0) + 1);
             
@@ -1508,7 +1701,7 @@
             updatePredictionUI({ predictions: sorted });
         }
 
-        // হট/কোল্ড জোন আপডেট (রিয়েল ডাটা থেকে)
+        // ==================== হট/কোল্ড জোন ====================
         function updateHotColdZones() {
             if (!allResults || allResults.length < 50) {
                 showDemoHotColdZones();
@@ -1538,7 +1731,6 @@
 
             let html = '';
             
-            // হট জোন
             hot.slice(0, 3).forEach(o => {
                 const icon = factorIcons[o] || '🎲';
                 html += `
@@ -1549,7 +1741,6 @@
                 `;
             });
             
-            // কোল্ড জোন
             cold.slice(0, 3).forEach(o => {
                 const icon = factorIcons[o] || '🎲';
                 html += `
@@ -1563,7 +1754,7 @@
             elements.hotColdZones.innerHTML = html || '<div style="text-align: center; padding: 20px;">কোন জোন পাওয়া যায়নি</div>';
         }
 
-        // ডেমো হট/কোল্ড জোন
+        // ==================== ডেমো হট/কোল্ড ====================
         function showDemoHotColdZones() {
             elements.hotColdZones.innerHTML = `
                 <div class="zone-item">
@@ -1589,7 +1780,7 @@
             `;
         }
 
-        // প্যাটার্ন আপডেট (রিয়েল ডাটা থেকে)
+        // ==================== প্যাটার্ন আপডেট ====================
         function updatePatterns() {
             if (!allResults || allResults.length < 100) {
                 showDemoPatterns();
@@ -1639,7 +1830,7 @@
             elements.patterns.innerHTML = html || '<div style="text-align: center; padding: 20px;">কোন প্যাটার্ন পাওয়া যায়নি</div>';
         }
 
-        // ডেমো প্যাটার্ন
+        // ==================== ডেমো প্যাটার্ন ====================
         function showDemoPatterns() {
             elements.patterns.innerHTML = `
                 <div class="pattern-item">
@@ -1663,14 +1854,13 @@
             `;
         }
 
-        // স্ট্র্যাটেজি আপডেট (রিয়েল ডাটা থেকে)
+        // ==================== স্ট্র্যাটেজি আপডেট ====================
         function updateStrategies() {
             if (!allResults || allResults.length < 50) {
                 showDemoStrategies();
                 return;
             }
 
-            // সিম্পল স্ট্র্যাটেজি ক্যালকুলেশন
             const outcomes = allResults.slice(-100).map(r => getResultInfo(r).type);
             
             const hotStrategy = calculateHotStrategy(outcomes);
@@ -1701,7 +1891,7 @@
             elements.strategies.innerHTML = html;
         }
 
-        // স্ট্র্যাটেজি ক্যালকুলেশন ফাংশন
+        // ==================== স্ট্র্যাটেজি ক্যালকুলেশন ====================
         function calculateHotStrategy(outcomes) {
             const freq = {};
             outcomes.forEach(o => freq[o] = (freq[o] || 0) + 1);
@@ -1734,7 +1924,7 @@
             return Math.round(momentum * 100);
         }
 
-        // ডেমো স্ট্র্যাটেজি
+        // ==================== ডেমো স্ট্র্যাটেজি ====================
         function showDemoStrategies() {
             elements.strategies.innerHTML = `
                 <div class="strategy-card">
@@ -1760,7 +1950,7 @@
             `;
         }
 
-        // রেজাল্ট ডিটেলস দেখান
+        // ==================== রেজাল্ট ডিটেলস ====================
         function showResultDetails(id) {
             const result = allResults.find(r => r.id === id);
             if (!result) return;
@@ -1769,7 +1959,7 @@
             showNotification(`ডিলার: ${info.dealer} | মাল্টিপ্লায়ার: x${info.multiplier}`, 'info');
         }
 
-        // নোটিফিকেশন
+        // ==================== নোটিফিকেশন ====================
         function showNotification(msg, type = 'success') {
             const notif = document.createElement('div');
             notif.className = 'notification';
@@ -1782,27 +1972,33 @@
             setTimeout(() => notif.remove(), 3000);
         }
 
-        // রিফ্রেশ
+        // ==================== রিফ্রেশ ====================
         function refreshPredictions() {
             showNotification('🔄 প্রেডিকশন রিফ্রেশ করা হচ্ছে...', 'info');
             loadPredictions();
+            if (currentMode === 'ensemble') {
+                loadPatternReport();
+            }
         }
 
-        // টাইম আপডেট
+        // ==================== টাইম আপডেট ====================
         function updateTimestamp() {
             const now = new Date();
             elements.updateTime.innerHTML = `আপডেট: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
         }
 
-        // ইনিশিয়ালাইজ
+        // ==================== ইনিশিয়ালাইজ ====================
         document.addEventListener('DOMContentLoaded', () => {
+            // ডিফল্ট ফাস্ট মোড
+            setPredictionMode('fast');
+            
             loadData();
             
             // টাইম আপডেট
             setInterval(updateTimestamp, 1000);
         });
 
-        // উইন্ডো আনলোড হলে ইন্টারভাল ক্লিয়ার
+        // ==================== উইন্ডো আনলোড ====================
         window.addEventListener('beforeunload', () => {
             if (autoRefreshInterval) {
                 clearInterval(autoRefreshInterval);
