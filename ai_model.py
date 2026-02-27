@@ -9,15 +9,10 @@ import pickle
 import os
 
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from config import Config
-
-# 🌟 নতুন প্যাটার্ন সিস্টেম ইম্পোর্ট
-from pattern_analyzer import PatternAnalyzer
-from pattern_engine import PatternEngine
-from pattern_learning import PatternLearning
 
 # সেটআপ লগিং
 logging.basicConfig(level=logging.INFO)
@@ -37,8 +32,6 @@ class AIPredictionModel:
         self.redis = redis_client
         self.label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
-        
-        # পুরানো মডেল
         self.rf_model = RandomForestClassifier(
             n_estimators=50,
             max_depth=10,
@@ -46,17 +39,8 @@ class AIPredictionModel:
             n_jobs=1
         )
         
-        # 🌟 নতুন মডেল (Gradient Boosting)
-        self.gb_model = GradientBoostingClassifier(
-            n_estimators=50,
-            learning_rate=0.1,
-            max_depth=5,
-            random_state=42
-        )
-        
         self.scaler_fitted = False
         self.rf_trained = False
-        self.gb_trained = False
         self.training_data = []
         self.accuracy_history = []
         self.last_trained = None
@@ -67,21 +51,12 @@ class AIPredictionModel:
         self.seq_length = 10
         self.n_features = 20
         
-        # পুরানো স্ট্যাটিস্টিক্যাল মডেল
+        # স্ট্যাটিস্টিক্যাল মডেল
         self.markov_chains = defaultdict(lambda: defaultdict(int))
         self.outcome_frequencies = Counter()
         self.dealer_patterns = defaultdict(lambda: defaultdict(int))
         self.time_patterns = defaultdict(lambda: defaultdict(int))
         self.multiplier_history = []
-        
-        # 🌟 নতুন প্যাটার্ন সিস্টেম
-        self.pattern_analyzer = PatternAnalyzer()
-        self.pattern_engine = PatternEngine()
-        self.pattern_learning = PatternLearning(self.pattern_engine, self.pattern_analyzer)
-        
-        # ক্যাশ সিস্টেম
-        self.cache = {}
-        self.cache_ttl = 300  # ৫ মিনিট
         
         # ক্যাশ ডিরেক্টরি
         os.makedirs('models', exist_ok=True)
@@ -89,7 +64,7 @@ class AIPredictionModel:
         # মডেল লোড
         self.load_model()
         
-        logger.info("✅ AI মডেল ইনিশিয়ালাইজ করা হয়েছে (পুরানো + নতুন প্যাটার্ন সিস্টেম)")
+        logger.info("✅ AI মডেল ইনিশিয়ালাইজ করা হয়েছে")
     
     def parse_datetime(self, time_str):
         """নিরাপদ datetime পার্সিং"""
@@ -136,8 +111,7 @@ class AIPredictionModel:
                 'timestamp': dt,
                 'hour': dt.hour if dt else 0,
                 'minute': dt.minute if dt else 0,
-                'weekday': dt.weekday() if dt else 0,
-                'date': dt.date() if dt else None
+                'weekday': dt.weekday() if dt else 0
             }
         except Exception as e:
             logger.error(f"আউটকাম এক্সট্র্যাক্ট ত্রুটি: {e}")
@@ -149,12 +123,11 @@ class AIPredictionModel:
                 'timestamp': None,
                 'hour': 0,
                 'minute': 0,
-                'weekday': 0,
-                'date': None
+                'weekday': 0
             }
     
     def update_statistical_models(self, outcomes_info):
-        """পুরানো স্ট্যাটিস্টিক্যাল মডেল আপডেট"""
+        """স্ট্যাটিস্টিক্যাল মডেল আপডেট"""
         if len(outcomes_info) < 10:
             return
         
@@ -204,13 +177,8 @@ class AIPredictionModel:
                 info['multiplier'] / 50.0,  # মাল্টিপ্লায়ার (নরমালাইজড)
             ]
             
-            # সাইক্লিক্যাল ফিচার
-            hour_sin = np.sin(2 * np.pi * info['hour'] / 24.0)
-            hour_cos = np.cos(2 * np.pi * info['hour'] / 24.0)
-            feature.extend([hour_sin, hour_cos])
-            
-            # শেষ ১০টি আউটকামের হিস্ট্রি
-            for j in range(1, 11):
+            # শেষ ৫টি আউটকামের হিস্ট্রি
+            for j in range(1, 6):
                 if i >= j:
                     prev_info = self.extract_outcome_info(data[i-j])
                     # আউটকাম এনকোডিং
@@ -220,178 +188,99 @@ class AIPredictionModel:
                 else:
                     feature.extend([0, 0])
             
-            # রোলিং স্ট্যাটিস্টিক্স
-            if i >= 5:
-                recent_outcomes = [self.extract_outcome_info(data[i-k])['outcome'] for k in range(1,6)]
-                recent_mult = [self.extract_outcome_info(data[i-k])['multiplier'] for k in range(1,6)]
-                
-                # ইউনিক আউটকামের সংখ্যা
-                unique_ratio = len(set(recent_outcomes)) / 5.0
-                feature.append(unique_ratio)
-                
-                # মাল্টিপ্লায়ার স্ট্যাটস
-                feature.append(np.mean(recent_mult) / 50.0)
-                feature.append(np.std(recent_mult) / 50.0 if len(recent_mult) > 1 else 0)
-            else:
-                feature.extend([0, 0, 0])
-            
             # প্যাডিং
-            while len(feature) < self.n_features + 5:  # extra features
+            while len(feature) < self.n_features:
                 feature.append(0)
             
-            features.append(feature[:self.n_features + 5])
+            features.append(feature[:self.n_features])
         
         return np.array(features, dtype=np.float32), outcomes
     
-    def get_fast_prediction(self, data):
-        """🚀 ফাস্ট প্রেডিকশন (শুধু স্ট্যাটিস্টিক্যাল)"""
-        cache_key = f"fast_pred_{len(data)}"
+    def train(self, data):
+        """মডেল ট্রেন"""
+        if self.is_training or len(data) < Config.MIN_DATA_FOR_TRAINING:
+            return
         
-        # ক্যাশ চেক
-        if cache_key in self.cache:
-            timestamp, pred = self.cache[cache_key]
-            if (datetime.now() - timestamp).seconds < self.cache_ttl:
-                return pred
+        self.is_training = True
+        logger.info(f"🚀 মডেল ট্রেনিং শুরু... ({len(data)} টি ডাটা)")
         
-        if len(data) < 10:
-            return [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
-        
-        # লাস্ট ডাটা
-        last_outcomes = []
-        for result in data[-10:]:
-            info = self.extract_outcome_info(result)
-            if info:
-                last_outcomes.append(info['outcome'])
-        
-        if len(last_outcomes) < 3:
-            return [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
-        
-        # দ্রুত প্রেডিকশন (ফ্রিকোয়েন্সি + মার্কোভ)
-        predictions = {}
-        
-        # ফ্রিকোয়েন্সি
-        total = sum(self.outcome_frequencies.values())
-        if total > 0:
-            for outcome, count in self.outcome_frequencies.most_common(5):
-                predictions[outcome] = count / total * 0.5
-        
-        # মার্কোভ
-        pattern = '|'.join(last_outcomes[-3:])
-        if pattern in self.markov_chains:
-            markov_total = sum(self.markov_chains[pattern].values())
-            if markov_total > 0:
-                for outcome, count in self.markov_chains[pattern].items():
-                    predictions[outcome] = predictions.get(outcome, 0) + (count / markov_total) * 0.5
-        
-        # সর্ট
-        result = sorted(predictions.items(), key=lambda x: x[1], reverse=True)[:5]
-        
-        # নরমালাইজ
-        total_score = sum(s for _, s in result)
-        if total_score > 0:
-            result = [(o, s/total_score) for o, s in result]
-        else:
-            result = [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
-        
-        # ক্যাশে সেভ
-        self.cache[cache_key] = (datetime.now(), result)
-        return result
-    
-    def get_ensemble_prediction(self, data, weights=None):
-        """এনসেম্বল প্রেডিকশন (পুরানো + নতুন প্যাটার্ন)"""
-        if not data or len(data) < 10:
-            return [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
-        
-        # ডিফল্ট ওয়েট
-        if weights is None:
-            weights = {
-                'old_frequency': 0.10,
-                'old_markov': 0.15,
-                'old_dealer': 0.10,
-                'old_time': 0.05,
-                'old_rf': 0.10,
-                'pattern': 0.50  # নতুন প্যাটার্ন সিস্টেম (৫০% ওয়েট)
-            }
-        
-        # লাস্ট ডাটা
-        last_5 = data[-5:]
-        last_info = self.extract_outcome_info(last_5[-1])
-        last_3_outcomes = [self.extract_outcome_info(data[-3+i])['outcome'] for i in range(3)]
-        
-        # ===== পুরানো প্রেডিকশন =====
-        
-        # ফ্রিকোয়েন্সি বেসড
-        total = sum(self.outcome_frequencies.values())
-        freq_pred = {}
-        if total > 0:
-            for outcome, count in self.outcome_frequencies.most_common(10):
-                freq_pred[outcome] = count / total
-        
-        # মার্কোভ প্রেডিকশন
-        markov_pred = {}
-        for outcome, prob in self.get_markov_prediction(last_3_outcomes):
-            markov_pred[outcome] = prob
-        
-        # ডিলার প্রেডিকশন
-        dealer_pred = {}
-        if last_info['dealer'] != 'Unknown':
-            for outcome, prob in self.get_dealer_prediction(last_info['dealer'], last_info['outcome']):
-                dealer_pred[outcome] = prob
-        
-        # টাইম প্রেডিকশন
-        time_pred = {}
-        for outcome, prob in self.get_time_prediction(last_info['hour']):
-            time_pred[outcome] = prob
-        
-        # আরএফ প্রেডিকশন
-        rf_pred = {}
-        if self.rf_trained and self.scaler_fitted:
-            try:
-                features, _ = self.prepare_features(last_5)
-                if len(features) > 0:
-                    features_scaled = self.scaler.transform([features[-1]])
-                    proba = self.rf_model.predict_proba(features_scaled)[0]
-                    for i, prob in enumerate(proba):
-                        outcome = self.label_encoder.inverse_transform([i])[0]
-                        rf_pred[outcome] = float(prob)
-            except Exception as e:
-                logger.error(f"RF প্রেডিকশন ত্রুটি: {e}")
-        
-        # ===== নতুন প্যাটার্ন প্রেডিকশন =====
-        pattern_predictions = self.pattern_engine.predict(data, self.pattern_analyzer)
-        pattern_dict = {outcome: prob for outcome, prob in pattern_predictions}
-        
-        # ===== এনসেম্বল =====
-        all_outcomes = set()
-        all_outcomes.update(freq_pred.keys())
-        all_outcomes.update(markov_pred.keys())
-        all_outcomes.update(dealer_pred.keys())
-        all_outcomes.update(time_pred.keys())
-        all_outcomes.update(rf_pred.keys())
-        all_outcomes.update([o for o, _ in pattern_predictions])
-        
-        ensemble = []
-        for outcome in all_outcomes:
-            score = (
-                weights['old_frequency'] * freq_pred.get(outcome, 0) +
-                weights['old_markov'] * markov_pred.get(outcome, 0) +
-                weights['old_dealer'] * dealer_pred.get(outcome, 0) +
-                weights['old_time'] * time_pred.get(outcome, 0) +
-                weights['old_rf'] * rf_pred.get(outcome, 0) +
-                weights['pattern'] * pattern_dict.get(outcome, 0)
+        try:
+            # আউটকাম ইনফো এক্সট্র্যাক্ট
+            outcomes_info = [self.extract_outcome_info(r) for r in data]
+            
+            # স্ট্যাটিস্টিক্যাল মডেল আপডেট
+            self.update_statistical_models(outcomes_info)
+            
+            # ফিচার প্রিপারেশন
+            features, outcomes = self.prepare_features(data)
+            
+            if len(features) < 50:
+                logger.warning("⚠️ পর্যাপ্ত ডাটা নেই ট্রেনিং এর জন্য")
+                return
+            
+            # আউটকাম লিমিট (টপ ১২)
+            top_outcomes = [o[0] for o in self.outcome_frequencies.most_common(12)]
+            outcomes_clean = [o if o in top_outcomes else 'Other' for o in outcomes]
+            
+            # এনকোডিং
+            self.label_encoder.fit(outcomes_clean)
+            y = self.label_encoder.transform(outcomes_clean)
+            
+            # ট্রেন-টেস্ট স্প্লিট
+            X_train, X_test, y_train, y_test = train_test_split(
+                features, y, test_size=0.2, random_state=42
             )
-            ensemble.append((outcome, score))
+            
+            # স্কেলিং
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            X_test_scaled = self.scaler.transform(X_test)
+            self.scaler_fitted = True
+            
+            # র্যান্ডম ফরেস্ট ট্রেন
+            self.rf_model.fit(X_train_scaled, y_train)
+            self.rf_trained = True
+            
+            # অ্যাকুরেসি চেক
+            y_pred = self.rf_model.predict(X_test_scaled)
+            accuracy = accuracy_score(y_test, y_pred)
+            self.accuracy_history.append(float(accuracy))
+            
+            # মার্কোভ বেসড অ্যাকুরেসি
+            markov_accuracy = self.calculate_markov_accuracy(outcomes_info)
+            
+            logger.info(f"✅ র্যান্ডম ফরেস্ট অ্যাকুরেসি: {accuracy:.2%}")
+            logger.info(f"✅ মার্কোভ চেইন অ্যাকুরেসি: {markov_accuracy:.2%}")
+            
+            self.last_trained = datetime.now()
+            
+            # মডেল সেভ
+            self.save_model()
+            
+        except Exception as e:
+            logger.error(f"❌ ট্রেনিং ত্রুটি: {e}")
+        finally:
+            self.is_training = False
+    
+    def calculate_markov_accuracy(self, outcomes_info):
+        """মার্কোভ চেইনের অ্যাকুরেসি ক্যালকুলেশন"""
+        if len(outcomes_info) < 100:
+            return 0.3
         
-        # সর্ট ও নরমালাইজ
-        ensemble.sort(key=lambda x: x[1], reverse=True)
-        total_score = sum(s for _, s in ensemble[:5])
+        outcomes = [info['outcome'] for info in outcomes_info]
+        correct = 0
+        total = 0
         
-        if total_score > 0:
-            ensemble = [(o, s/total_score) for o, s in ensemble[:5]]
-        else:
-            ensemble = [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
+        for i in range(len(outcomes) - 4):
+            pattern = f"{outcomes[i]}|{outcomes[i+1]}|{outcomes[i+2]}"
+            actual = outcomes[i+3]
+            
+            if pattern in self.markov_chains:
+                predicted = max(self.markov_chains[pattern].items(), key=lambda x: x[1])[0]
+                if predicted == actual:
+                    correct += 1
+                total += 1
         
-        return ensemble
+        return correct / total if total > 0 else 0.3
     
     def get_markov_prediction(self, last_3_outcomes):
         """মার্কোভ চেইন থেকে প্রেডিকশন"""
@@ -433,133 +322,105 @@ class AIPredictionModel:
         
         return []
     
-    def train(self, data):
-        """মডেল ট্রেন (পুরানো + নতুন)"""
-        if self.is_training or len(data) < Config.MIN_DATA_FOR_TRAINING:
-            return
+    def get_ensemble_prediction(self, data, weights=None):
+        """এনসেম্বল প্রেডিকশন (সব মডেল একসাথে)"""
+        if not data or len(data) < 10:
+            return [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
         
-        self.is_training = True
-        logger.info(f"🚀 মডেল ট্রেনিং শুরু... ({len(data)} টি ডাটা)")
+        # ডিফল্ট ওয়েট
+        if weights is None:
+            weights = {
+                'frequency': 0.25,
+                'markov': 0.30,
+                'dealer': 0.20,
+                'time': 0.15,
+                'rf': 0.10
+            }
         
-        try:
-            # আউটকাম ইনফো এক্সট্র্যাক্ট
-            outcomes_info = [self.extract_outcome_info(r) for r in data]
-            
-            # পুরানো স্ট্যাটিস্টিক্যাল মডেল আপডেট
-            self.update_statistical_models(outcomes_info)
-            
-            # 🌟 নতুন প্যাটার্ন এনালাইসিস
-            patterns = self.pattern_analyzer.analyze_all_patterns(outcomes_info)
-            
-            # 🌟 নতুন প্যাটার্ন ডিসকভারি
-            self.pattern_learning.discover_new_patterns(data)
-            
-            # ফিচার প্রিপারেশন
-            features, outcomes = self.prepare_features(data)
-            
-            if len(features) < 50:
-                logger.warning("⚠️ পর্যাপ্ত ডাটা নেই ট্রেনিং এর জন্য")
-                return
-            
-            # আউটকাম লিমিট (টপ ১২)
-            top_outcomes = [o[0] for o in self.outcome_frequencies.most_common(12)]
-            outcomes_clean = [o if o in top_outcomes else 'Other' for o in outcomes]
-            
-            # এনকোডিং
-            self.label_encoder.fit(outcomes_clean)
-            y = self.label_encoder.transform(outcomes_clean)
-            
-            # ট্রেন-টেস্ট স্প্লিট
-            X_train, X_test, y_train, y_test = train_test_split(
-                features, y, test_size=0.2, random_state=42
+        # লাস্ট ডাটা
+        last_5 = data[-5:]
+        last_info = self.extract_outcome_info(last_5[-1])
+        last_3_outcomes = [self.extract_outcome_info(data[-3+i])['outcome'] for i in range(3)]
+        
+        # ফ্রিকোয়েন্সি বেসড
+        total = sum(self.outcome_frequencies.values())
+        freq_pred = {}
+        if total > 0:
+            for outcome, count in self.outcome_frequencies.most_common(10):
+                freq_pred[outcome] = count / total
+        
+        # মার্কোভ প্রেডিকশন
+        markov_pred = {}
+        for outcome, prob in self.get_markov_prediction(last_3_outcomes):
+            markov_pred[outcome] = prob
+        
+        # ডিলার প্রেডিকশন
+        dealer_pred = {}
+        if last_info['dealer'] != 'Unknown':
+            for outcome, prob in self.get_dealer_prediction(last_info['dealer'], last_info['outcome']):
+                dealer_pred[outcome] = prob
+        
+        # টাইম প্রেডিকশন
+        time_pred = {}
+        for outcome, prob in self.get_time_prediction(last_info['hour']):
+            time_pred[outcome] = prob
+        
+        # আরএফ প্রেডিকশন (যদি ট্রেন করা থাকে)
+        rf_pred = {}
+        if self.rf_trained and self.scaler_fitted:
+            try:
+                features, _ = self.prepare_features(last_5)
+                if len(features) > 0:
+                    features_scaled = self.scaler.transform([features[-1]])
+                    proba = self.rf_model.predict_proba(features_scaled)[0]
+                    for i, prob in enumerate(proba):
+                        outcome = self.label_encoder.inverse_transform([i])[0]
+                        rf_pred[outcome] = float(prob)
+            except Exception as e:
+                logger.error(f"RF প্রেডিকশন ত্রুটি: {e}")
+        
+        # এনসেম্বল
+        all_outcomes = set()
+        all_outcomes.update(freq_pred.keys())
+        all_outcomes.update(markov_pred.keys())
+        all_outcomes.update(dealer_pred.keys())
+        all_outcomes.update(time_pred.keys())
+        all_outcomes.update(rf_pred.keys())
+        
+        ensemble = []
+        for outcome in all_outcomes:
+            score = (
+                weights['frequency'] * freq_pred.get(outcome, 0) +
+                weights['markov'] * markov_pred.get(outcome, 0) +
+                weights['dealer'] * dealer_pred.get(outcome, 0) +
+                weights['time'] * time_pred.get(outcome, 0) +
+                weights['rf'] * rf_pred.get(outcome, 0)
             )
-            
-            # স্কেলিং
-            X_train_scaled = self.scaler.fit_transform(X_train)
-            X_test_scaled = self.scaler.transform(X_test)
-            self.scaler_fitted = True
-            
-            # র্যান্ডম ফরেস্ট ট্রেন
-            self.rf_model.fit(X_train_scaled, y_train)
-            self.rf_trained = True
-            
-            # গ্রেডিয়েন্ট বুস্টিং ট্রেন
-            self.gb_model.fit(X_train_scaled, y_train)
-            self.gb_trained = True
-            
-            # অ্যাকুরেসি চেক
-            y_pred_rf = self.rf_model.predict(X_test_scaled)
-            accuracy_rf = accuracy_score(y_test, y_pred_rf)
-            
-            y_pred_gb = self.gb_model.predict(X_test_scaled)
-            accuracy_gb = accuracy_score(y_test, y_pred_gb)
-            
-            avg_accuracy = (accuracy_rf + accuracy_gb) / 2
-            self.accuracy_history.append(float(avg_accuracy))
-            
-            # মার্কোভ বেসড অ্যাকুরেসি
-            markov_accuracy = self.calculate_markov_accuracy(outcomes_info)
-            
-            logger.info(f"✅ র্যান্ডম ফরেস্ট অ্যাকুরেসি: {accuracy_rf:.2%}")
-            logger.info(f"✅ গ্রেডিয়েন্ট বুস্টিং অ্যাকুরেসি: {accuracy_gb:.2%}")
-            logger.info(f"✅ মার্কোভ চেইন অ্যাকুরেসি: {markov_accuracy:.2%}")
-            logger.info(f"✅ প্যাটার্ন পাওয়া গেছে: {len(patterns)} টি")
-            
-            self.last_trained = datetime.now()
-            
-            # মডেল সেভ
-            self.save_model()
-            
-        except Exception as e:
-            logger.error(f"❌ ট্রেনিং ত্রুটি: {e}")
-        finally:
-            self.is_training = False
-    
-    def calculate_markov_accuracy(self, outcomes_info):
-        """মার্কোভ চেইনের অ্যাকুরেসি ক্যালকুলেশন"""
-        if len(outcomes_info) < 100:
-            return 0.3
+            ensemble.append((outcome, score))
         
-        outcomes = [info['outcome'] for info in outcomes_info]
-        correct = 0
-        total = 0
+        # সর্ট ও নরমালাইজ
+        ensemble.sort(key=lambda x: x[1], reverse=True)
+        total_score = sum(s for _, s in ensemble[:5])
         
-        for i in range(len(outcomes) - 4):
-            pattern = f"{outcomes[i]}|{outcomes[i+1]}|{outcomes[i+2]}"
-            actual = outcomes[i+3]
-            
-            if pattern in self.markov_chains:
-                predicted = max(self.markov_chains[pattern].items(), key=lambda x: x[1])[0]
-                if predicted == actual:
-                    correct += 1
-                total += 1
+        if total_score > 0:
+            ensemble = [(o, s/total_score) for o, s in ensemble[:5]]
+        else:
+            ensemble = [('1', 0.5), ('2', 0.3), ('CoinFlip', 0.2)]
         
-        return correct / total if total > 0 else 0.3
-    
-    def learn_from_result(self, predicted, actual, patterns_used):
-        """প্রতি রেজাল্ট থেকে শেখা (নতুন)"""
-        self.pattern_learning.learn_from_result(predicted, actual, patterns_used)
-    
-    def get_pattern_report(self):
-        """প্যাটার্ন রিপোর্ট (নতুন)"""
-        return {
-            'important_patterns': self.pattern_analyzer.get_important_patterns(),
-            'pattern_stats': self.pattern_engine.get_pattern_stats(),
-            'learning_stats': self.pattern_learning.get_learning_stats()
-        }
+        return ensemble
     
     def save_model(self):
         """মডেল সেভ"""
         try:
             model_data = {
                 'label_encoder': self.label_encoder.classes_.tolist() if hasattr(self.label_encoder, 'classes_') else [],
-                'accuracy_history': self.accuracy_history[-100:],
+                'accuracy_history': self.accuracy_history[-100:],  # শেষ ১০০
                 'last_trained': datetime.now().isoformat(),
                 'outcome_frequencies': dict(self.outcome_frequencies.most_common(50)),
                 'scaler_fitted': self.scaler_fitted
             }
             
-            # পুরানো মডেল সেভ
+            # পিকল ফাইল সেভ
             with open('models/statistical_model.pkl', 'wb') as f:
                 pickle.dump({
                     'markov_chains': dict(self.markov_chains),
@@ -572,20 +433,12 @@ class AIPredictionModel:
                 with open('models/rf_model.pkl', 'wb') as f:
                     pickle.dump(self.rf_model, f)
             
-            # জিবি মডেল সেভ
-            if self.gb_trained:
-                with open('models/gb_model.pkl', 'wb') as f:
-                    pickle.dump(self.gb_model, f)
-            
             # স্কেলার সেভ
             if self.scaler_fitted:
                 with open('models/scaler.pkl', 'wb') as f:
                     pickle.dump(self.scaler, f)
             
-            # 🌟 প্যাটার্ন লার্নিং অটো সেভ করে
-            self.pattern_learning.save_model()
-            
-            # রেডিসে সেভ
+            # রেডিসে সেভ (যদি থাকে)
             if self.redis:
                 self.redis.setex('ai_model_meta', 86400, json.dumps(model_data))
             
@@ -597,7 +450,7 @@ class AIPredictionModel:
     def load_model(self):
         """মডেল লোড"""
         try:
-            # পুরানো মডেল লোড
+            # পিকল ফাইল লোড
             if os.path.exists('models/statistical_model.pkl'):
                 with open('models/statistical_model.pkl', 'rb') as f:
                     data = pickle.load(f)
@@ -611,20 +464,11 @@ class AIPredictionModel:
                     self.rf_model = pickle.load(f)
                     self.rf_trained = True
             
-            # জিবি মডেল লোড
-            if os.path.exists('models/gb_model.pkl'):
-                with open('models/gb_model.pkl', 'rb') as f:
-                    self.gb_model = pickle.load(f)
-                    self.gb_trained = True
-            
             # স্কেলার লোড
             if os.path.exists('models/scaler.pkl'):
                 with open('models/scaler.pkl', 'rb') as f:
                     self.scaler = pickle.load(f)
                     self.scaler_fitted = True
-            
-            # 🌟 প্যাটার্ন লার্নিং অটো লোড করে
-            self.pattern_learning.load_model()
             
             # রেডিস থেকে মেটা ডাটা লোড
             if self.redis:
@@ -654,7 +498,5 @@ class AIPredictionModel:
             'accuracy': self.accuracy_history[-1] if self.accuracy_history else 0.125,
             'last_trained': self.last_trained.isoformat() if self.last_trained else None,
             'rf_trained': self.rf_trained,
-            'gb_trained': self.gb_trained,
-            'tf_available': self.tf_available,
-            'cache_size': len(self.cache)
+            'tf_available': self.tf_available
         }
