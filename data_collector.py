@@ -126,7 +126,7 @@ class DataCollector:
                 'Referer': 'https://www.casino.org/'
             }
             
-            response = requests.get(url, headers=headers, timeout=5)
+            response = requests.get(url, headers=headers, timeout=2)
             
             if response.status_code == 200:
                 new_data = response.json()
