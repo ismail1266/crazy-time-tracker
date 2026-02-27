@@ -32,6 +32,31 @@ ai_model = AIPredictionModel(data_collector.redis_client)
 background_thread_running = False
 initial_data_collected = False
 
+# ai_model.py - নতুন মেথড যোগ করুন
+
+def quick_update(self, data):
+    """দ্রুত AI আপডেট (শুধু স্ট্যাটিস্টিক্যাল)"""
+    if self.is_training:
+        return
+    
+    try:
+        # শুধু মার্কোভ চেইন আপডেট করুন (দ্রুত)
+        if len(data) > 5:
+            last_3 = data[-3:]
+            outcomes = [self.extract_outcome_info(d)['outcome'] for d in last_3]
+            
+            # মার্কোভ প্যাটার্ন আপডেট
+            pattern = f"{outcomes[0]}|{outcomes[1]}|{outcomes[2]}"
+            next_outcome = self.extract_outcome_info(data[-1])['outcome']
+            self.markov_chains[pattern][next_outcome] += 1
+            
+        # ফ্রিকোয়েন্সি আপডেট
+        last_outcome = self.extract_outcome_info(data[-1])['outcome']
+        self.outcome_frequencies[last_outcome] += 1
+        
+    except Exception as e:
+        logger.error(f"Quick update error: {e}")
+
 def background_data_check():
     """ব্যাকগ্রাউন্ডে ডাটা চেক করার থ্রেড"""
     global background_thread_running
