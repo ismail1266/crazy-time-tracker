@@ -11,8 +11,8 @@ class Config:
     # ডাটা কালেকশন সেটিংস
     PAGE_SIZE = 100
     MAX_PAGES = 200  # কমিয়ে দিলাম মেমোরির জন্য
-    REQUEST_TIMEOUT = 15
-    REQUEST_DELAY = 0.3  # ৩০০ms ডেলে
+    REQUEST_TIMEOUT = 5
+    REQUEST_DELAY = 0.1  # ৩০০ms ডেলে
     
     # টেবিল স্ট্রাকচার
     ROWS_PER_COLUMN = 15
