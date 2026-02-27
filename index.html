@@ -1101,7 +1101,7 @@
             loadFromCache();
         });
 
-        // প্রতি ১০ সেকেন্ডে নতুন ডাটা চেক
+        // প্রতি 5 সেকেন্ডে নতুন ডাটা চেক
         setInterval(async () => {
             try {
                 const response = await fetch('/api/crazytime/latest');
@@ -1131,7 +1131,7 @@
             } catch (error) {
                 console.log('New data check failed');
             }
-        }, 10000);
+        }, 5000);
 
         // নোটিফিকেশন ফাংশন
         function showNotification(msg) {
