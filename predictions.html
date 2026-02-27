@@ -1141,7 +1141,7 @@
                 clearInterval(autoRefreshInterval);
             }
             
-            // প্রতি ১০ সেকেন্ডে নতুন ডাটা চেক
+            // প্রতি 1 সেকেন্ডে নতুন ডাটা চেক
             autoRefreshInterval = setInterval(async () => {
                 try {
                     const response = await fetch('/api/crazytime/latest');
@@ -1171,7 +1171,7 @@
                 } catch (error) {
                     console.log('Auto refresh failed:', error);
                 }
-            }, 10000);
+            }, 1000);
         }
 
         // প্রেডিকশন লোড
