@@ -49,8 +49,8 @@ def background_data_check():
         except Exception as e:
             logger.error(f"❌ ব্যাকগ্রাউন্ড চেকে ত্রুটি: {e}")
         
-        # ১০ সেকেন্ড স্লিপ
-        time.sleep(10)
+        # 5 সেকেন্ড স্লিপ
+        time.sleep(5)
 
 def start_background_thread():
     """ব্যাকগ্রাউন্ড থ্রেড শুরু"""
