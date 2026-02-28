@@ -1218,7 +1218,7 @@
                 
                 // অল্টারনেটিভ
                 elements.alternatives.innerHTML = '';
-                for (let i = 1; i < Math.min(4, preds.length); i++) {
+                for (let i = 1; i < Math.min(8, preds.length); i++) {
                     const outcome = preds[i][0];
                     const prob = (preds[i][1] * 100).toFixed(1);
                     const icon = factorIcons[outcome] || '🎲';
@@ -1658,6 +1658,24 @@
                     <span class="pattern-sequence">5→10→CB</span>
                     <div class="pattern-next">
                         <span class="pattern-badge">🪙 CF (৫৮%)</span>
+                    </div>
+                </div>
+                <div class="pattern-item">
+                    <span class="pattern-sequence">CF→CH→CB</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">⭐ CB (৬৮%)</span>
+                    </div>
+                </div>
+                <div class="pattern-item">
+                    <span class="pattern-sequence">CH→CB→PC</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">💰 CH (৫২%)</span>
+                    </div>
+                </div>
+                <div class="pattern-item">
+                    <span class="pattern-sequence">CB→PC→5</span>
+                    <div class="pattern-next">
+                        <span class="pattern-badge">📌 PC (৪৫%)</span>
                     </div>
                 </div>
             `;
