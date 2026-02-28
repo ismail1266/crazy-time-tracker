@@ -19,6 +19,12 @@ class DataCollector:
         self.is_collecting = False
         self.last_collected = None
         self.total_collected = 0
+        self.bonus_counts = {
+            'CoinFlip': 0,
+            'CashHunt': 0,
+            'CrazyBonus': 0,
+            'Pachinko': 0
+        }
         
         # Redis কানেকশন
         try:
@@ -67,7 +73,18 @@ class DataCollector:
                             logger.info(f"📭 পৃষ্ঠা {page+1} খালি (empty count: {empty_count})")
                         else:
                             all_data.extend(page_data)
+                            for item in page_data:
+                                try:
+                                    outcome = item.get('data', {}).get('result', {}).get('outcome', {})
+                                    wheel = outcome.get('wheelResult', {})
+                                    if wheel.get('type') == 'BonusRound':
+                                        bonus_type = wheel.get('wheelSector')
+                                        if bonus_type in self.bonus_counts:
+                                            self.bonus_counts[bonus_type] += 1
+                                except:
+                                    pass
                             logger.info(f"✅ পৃষ্ঠা {page+1}: {len(page_data)} টি (মোট: {len(all_data)})")
+                            logger.info(f"📊 বোনাস কাউন্ট: {self.bonus_counts}")
                             empty_count = 0
                             
                         page += 1
@@ -186,11 +203,13 @@ class DataCollector:
                     'last_update': datetime.now().isoformat(),
                     'oldest': data[0].get('data', {}).get('settledAt') if data else None,
                     'newest': data[-1].get('data', {}).get('settledAt') if data else None
+                    'bonus_counts': self.bonus_counts
                 }
                 pipeline.setex("metadata", Config.CACHE_TIMEOUT, json.dumps(metadata))
                 
                 pipeline.execute()
                 logger.info(f"💾 Redis-এ {len(data)} টি ডাটা সংরক্ষিত")
+                logger.info(f"📊 বোনাস পরিসংখ্যান: {self.bonus_counts}")
             else:
                 # লোকাল ক্যাশ
                 self.local_cache = data
