@@ -23,8 +23,34 @@ class Config:
     RETRAIN_INTERVAL = 3600
     
     # মেমোরি অপ্টিমাইজেশন
-    MAX_DATA_POINTS = 2000  # সর্বোচ্চ ডাটা পয়েন্ট
+    MAX_DATA_POINTS = 3000  # সর্বোচ্চ ডাটা পয়েন্ট
     BATCH_SIZE = 100
+
+    # বোনাস গেমের তালিকা
+BONUS_GAMES = ['CoinFlip', 'CashHunt', 'CrazyBonus', 'Pachinko']
+BONUS_SHORTCODES = {
+    'CoinFlip': 'CF',
+    'CashHunt': 'CH', 
+    'CrazyBonus': 'CB',
+    'Pachinko': 'PC'
+}
+
+# সব সম্ভাব্য আউটকাম
+ALL_OUTCOMES = ['1', '2', '5', '10', 'CF', 'CH', 'CB', 'PC']
+
+# আউটকাম ক্যাটাগরি
+OUTCOME_CATEGORIES = {
+    'number': ['1', '2', '5', '10'],
+    'bonus': ['CF', 'CH', 'CB', 'PC']
+}
+
+# বোনাস রঙ (UI-র জন্য)
+BONUS_COLORS = {
+    'CF': '#2d4d3a',  # CoinFlip - সবুজ
+    'CH': '#4d3a2d',  # CashHunt - কমলা
+    'CB': '#3a2d4d',  # CrazyBonus - বেগুনি
+    'PC': '#2d4d4d'   # Pachinko - নীল
+}
     
     # ক্যাশ সেটিংস
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
