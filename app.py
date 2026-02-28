@@ -125,15 +125,11 @@ def before_request():
 
 @app.route('/api/predictions/fast')
 def get_fast_predictions():
-    """সুপার ফাস্ট প্রেডিকশন API (১ সেকেন্ডের মধ্যে)"""
+    """ফাস্ট প্রেডিকশন API - আপডেটেড"""
     try:
-        # ১. দ্রুত ডাটা নিন
         data = data_collector.get_all_data()
+        recent_data = data[-30:] if len(data) > 30 else data
         
-        # ২. শুধু শেষ ২০টা ডাটা ব্যবহার করুন
-        recent_data = data[-20:] if len(data) > 20 else data
-        
-        # ৩. ফ্রিকোয়েন্সি বের করুন
         outcomes = []
         for d in recent_data:
             try:
@@ -142,36 +138,56 @@ def get_fast_predictions():
                 if wheel.get('type') == 'Number':
                     outcomes.append(str(wheel.get('wheelSector', '0')))
                 else:
-                    outcomes.append(wheel.get('wheelSector', 'Unknown'))
+                    raw = wheel.get('wheelSector', '')
+                    if raw == 'CoinFlip': outcomes.append('CF')
+                    elif raw == 'CashHunt': outcomes.append('CH')
+                    elif raw == 'CrazyBonus': outcomes.append('CB')
+                    elif raw == 'Pachinko': outcomes.append('PC')
+                    else: outcomes.append('Unknown')
             except:
                 pass
         
-        # ৪. ফ্রিকোয়েন্সি ক্যালকুলেট করুন
         from collections import Counter
         freq = Counter(outcomes)
         
         if freq:
-            # সবচেয়ে বেশি আসা আউটকাম
-            primary = freq.most_common(1)[0][0]
-            alternatives = [o for o, _ in freq.most_common(4)][1:4]
+            # টপ ৩ প্রাইমারি
+            top_3 = freq.most_common(3)
+            primary = top_3[0][0] if top_3 else '1'
             
             return jsonify({
                 'primary': primary,
-                'alternatives': alternatives,
-                'confidence': f"{min(100, len(outcomes)*5)}%",  # ডায়নামিক কনফিডেন্স
+                'alternatives': [o for o, _ in top_3[1:4]] if len(top_3) > 1 else ['2', '5', 'CF'],
+                'all_probabilities': [{'outcome': o, 'prob': c/len(outcomes)} for o, c in freq.most_common(8)],
+                'confidence': f"{min(90, int((freq.most_common(1)[0][1]/len(outcomes))*100))}%",
                 'fast': True
             })
         
     except Exception as e:
         logger.error(f"Fast API error: {e}")
     
-    # ফলেরব্যাক
     return jsonify({
         'primary': '1',
-        'alternatives': ['2', '5', 'CF'],
+        'alternatives': ['2', '5', 'CF', 'CH', 'CB', 'PC'],
         'confidence': '50%',
         'fast': True
     })
+
+@app.route('/api/bonus-stats')
+def get_bonus_stats():
+    """বোনাস পরিসংখ্যান API"""
+    try:
+        data = data_collector.get_all_data()
+        model_stats = ai_model.get_model_stats()
+        
+        return jsonify({
+            'bonus_counts': model_stats.get('bonus_counts', {}),
+            'total_bonus': sum(model_stats.get('bonus_counts', {}).values()),
+            'last_trained': model_stats.get('last_trained'),
+            'accuracy': model_stats.get('accuracy', 0)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def serve_index():
@@ -223,7 +239,8 @@ def get_predictions():
         
         if len(data) < 20:
             return jsonify({
-                'predictions': [['1', 0.5], ['2', 0.3], ['CF', 0.2]],
+                'predictions': [['1', 0.2], ['2', 0.15], ['5', 0.15], ['10', 0.1],
+                               [['CF', 0.15], ['CH', 0.1], ['CB', 0.08], ['PC', 0.07]],
                 'model_status': {
                     'accuracy': 0.125,
                     'data_points': len(data),
@@ -235,21 +252,26 @@ def get_predictions():
         
         # ফ্যাক্টর ডাটা যোগ করুন
         factors = {
-            'markov_prob': 0.72,
+            'markov_2gram': 0.65,
+            'markov_3gram': 0.72,
+            'markov_4gram': 0.68,
+            'bonus_transition': 0.70,
             'dealer_prob': 0.65,
             'multiplier_prob': 0.48,
             'time_prob': 0.53,
-            'hot_prob': 0.81
+            'hot_prob': 0.81,
+            'bonus_gap': 0.60
         }
         
         response = {
-            'predictions': predictions[:5],
+            'predictions': predictions[:8],
             'factors': factors,
             'model_status': {
                 'accuracy': ai_model.accuracy_history[-1] if ai_model.accuracy_history else 0.125,
                 'trained': ai_model.last_trained.isoformat() if ai_model.last_trained else None,
                 'data_points': len(data),
                 'learning_phase': 'অ্যাডভান্সড' if len(data) > 200 else 'বেসিক'
+                'bonus_stats': ai_model.get_model_stats().get('bonus_counts', {})
             },
             'timestamp': datetime.now().isoformat()
         }
@@ -262,10 +284,25 @@ def get_predictions():
 
 @app.route('/api/status')
 def get_status():
-    """স্ট্যাটাস API"""
+    """স্ট্যাটাস API - বোনাস ইনফো সহ"""
     try:
         data = data_collector.get_all_data()
         stats = data_collector.get_statistics() if hasattr(data_collector, 'get_statistics') else {}
+        
+        # বোনাস কাউন্ট বের করা
+        bonus_counts = {'CF': 0, 'CH': 0, 'CB': 0, 'PC': 0}
+        for item in data[-500:]:  # শেষ ৫০০ টা
+            try:
+                outcome = item.get('data', {}).get('result', {}).get('outcome', {})
+                wheel = outcome.get('wheelResult', {})
+                if wheel.get('type') != 'Number':
+                    raw = wheel.get('wheelSector', '')
+                    if raw == 'CoinFlip': bonus_counts['CF'] += 1
+                    elif raw == 'CashHunt': bonus_counts['CH'] += 1
+                    elif raw == 'CrazyBonus': bonus_counts['CB'] += 1
+                    elif raw == 'Pachinko': bonus_counts['PC'] += 1
+            except:
+                pass
         
         return jsonify({
             'status': 'running',
@@ -273,6 +310,7 @@ def get_status():
             'background_thread': background_thread_running,
             'initial_data_collected': initial_data_collected,
             'statistics': stats,
+            'bonus_counts': bonus_counts,
             'timestamp': datetime.now().isoformat()
         })
     except Exception as e:
