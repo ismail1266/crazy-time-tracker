@@ -504,7 +504,7 @@ class AIPredictionModel:
         return np.array(features, dtype=np.float32), outcomes
     
     def train(self, data):
-        """মডেল ট্রেন - আপডেটেড"""
+        """মডেল ট্রেন - আপডেটেড এবং ফিক্সড"""
         if self.is_training or len(data) < Config.MIN_DATA_FOR_TRAINING:
             return
         
@@ -527,6 +527,13 @@ class AIPredictionModel:
             
             # আউটকাম লিমিট (সব বোনাস রাখা)
             valid_outcomes = [o for o in outcomes if o in self.all_outcomes]
+            
+            # চেক করুন যে একাধিক ইউনিক আউটকাম আছে কিনা
+            unique_outcomes = set(valid_outcomes)
+            if len(unique_outcomes) < 2:
+                logger.warning(f"⚠️ শুধু {len(unique_outcomes)} টি ইউনিক আউটকাম আছে, ট্রেনিং স্কিপ করা হচ্ছে")
+                self.is_training = False
+                return
             
             # এনকোডিং
             self.label_encoder.fit(valid_outcomes)
@@ -571,6 +578,8 @@ class AIPredictionModel:
             
         except Exception as e:
             logger.error(f"❌ ট্রেনিং ত্রুটি: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             self.is_training = False
     
