@@ -202,7 +202,7 @@ class DataCollector:
                     'total_count': len(data),
                     'last_update': datetime.now().isoformat(),
                     'oldest': data[0].get('data', {}).get('settledAt') if data else None,
-                    'newest': data[-1].get('data', {}).get('settledAt') if data else None
+                    'newest': data[-1].get('data', {}).get('settledAt') if data else None,
                     'bonus_counts': self.bonus_counts
                 }
                 pipeline.setex("metadata", Config.CACHE_TIMEOUT, json.dumps(metadata))
