@@ -32,31 +32,6 @@ ai_model = AIPredictionModel(data_collector.redis_client)
 background_thread_running = False
 initial_data_collected = False
 
-# ai_model.py - নতুন মেথড যোগ করুন
-
-def quick_update(self, data):
-    """দ্রুত AI আপডেট (শুধু স্ট্যাটিস্টিক্যাল)"""
-    if self.is_training:
-        return
-    
-    try:
-        # শুধু মার্কোভ চেইন আপডেট করুন (দ্রুত)
-        if len(data) > 5:
-            last_3 = data[-3:]
-            outcomes = [self.extract_outcome_info(d)['outcome'] for d in last_3]
-            
-            # মার্কোভ প্যাটার্ন আপডেট
-            pattern = f"{outcomes[0]}|{outcomes[1]}|{outcomes[2]}"
-            next_outcome = self.extract_outcome_info(data[-1])['outcome']
-            self.markov_chains[pattern][next_outcome] += 1
-            
-        # ফ্রিকোয়েন্সি আপডেট
-        last_outcome = self.extract_outcome_info(data[-1])['outcome']
-        self.outcome_frequencies[last_outcome] += 1
-        
-    except Exception as e:
-        logger.error(f"Quick update error: {e}")
-
 def background_data_check():
     """ব্যাকগ্রাউন্ডে ডাটা চেক করার থ্রেড"""
     global background_thread_running
@@ -95,99 +70,26 @@ def stop_background_thread():
 # অ্যাপ বন্ধ হলে থ্রেড বন্ধ
 atexit.register(stop_background_thread)
 
-def initial_data_collection():
-    """প্রথমবার ডাটা কালেকশন"""
-    global initial_data_collected
-    if not initial_data_collected:
-        logger.info("🚀 প্রাথমিক ডাটা কালেকশন শুরু...")
+def start_initial_collection():
+    """আলাদা থ্রেডে ডাটা কালেকশন শুরু"""
+    time.sleep(5)  # healthcheck এর জন্য ৫ সেকেন্ড wait
+    with app.app_context():
+        logger.info("🚀 ডাটা কালেকশন শুরু হচ্ছে...")
         data = data_collector.fetch_all_data()
-        
-        # AI মডেল ট্রেন
         if data and len(data) >= Config.MIN_DATA_FOR_TRAINING:
             ai_model.train(data)
-        
-        initial_data_collected = True
-        start_background_thread()
 
-# Flask 2.3+ এ before_first_request এর পরিবর্তে
 @app.before_request
 def before_request():
-    """প্রতি রিকোয়েস্টের আগে চেক করে যে প্রথম রিকোয়েস্ট কিনা"""
+    """প্রথম রিকোয়েস্টে ডাটা কালেকশন শুরু"""
     global initial_data_collected
     if not initial_data_collected:
-        # প্রথম রিকোয়েস্ট হলে ডাটা কালেকশন শুরু করো
-        thread = threading.Thread(target=initial_data_collection, daemon=True)
+        initial_data_collected = True
+        # আলাদা থ্রেডে ডাটা কালেকশন শুরু করুন
+        thread = threading.Thread(target=start_initial_collection, daemon=True)
         thread.start()
 
 # ==================== রুটস ====================
-
-# app.py - নতুন API রুট
-
-@app.route('/api/predictions/fast')
-def get_fast_predictions():
-    """ফাস্ট প্রেডিকশন API - আপডেটেড"""
-    try:
-        data = data_collector.get_all_data()
-        recent_data = data[-30:] if len(data) > 30 else data
-        
-        outcomes = []
-        for d in recent_data:
-            try:
-                outcome = d.get('data', {}).get('result', {}).get('outcome', {})
-                wheel = outcome.get('wheelResult', {})
-                if wheel.get('type') == 'Number':
-                    outcomes.append(str(wheel.get('wheelSector', '0')))
-                else:
-                    raw = wheel.get('wheelSector', '')
-                    if raw == 'CoinFlip': outcomes.append('CF')
-                    elif raw == 'CashHunt': outcomes.append('CH')
-                    elif raw == 'CrazyBonus': outcomes.append('CB')
-                    elif raw == 'Pachinko': outcomes.append('PC')
-                    else: outcomes.append('Unknown')
-            except:
-                pass
-        
-        from collections import Counter
-        freq = Counter(outcomes)
-        
-        if freq:
-            # টপ ৩ প্রাইমারি
-            top_3 = freq.most_common(3)
-            primary = top_3[0][0] if top_3 else '1'
-            
-            return jsonify({
-                'primary': primary,
-                'alternatives': [o for o, _ in top_3[1:4]] if len(top_3) > 1 else ['2', '5', 'CF'],
-                'all_probabilities': [{'outcome': o, 'prob': c/len(outcomes)} for o, c in freq.most_common(8)],
-                'confidence': f"{min(90, int((freq.most_common(1)[0][1]/len(outcomes))*100))}%",
-                'fast': True
-            })
-        
-    except Exception as e:
-        logger.error(f"Fast API error: {e}")
-    
-    return jsonify({
-        'primary': '1',
-        'alternatives': ['2', '5', 'CF', 'CH', 'CB', 'PC'],
-        'confidence': '50%',
-        'fast': True
-    })
-
-@app.route('/api/bonus-stats')
-def get_bonus_stats():
-    """বোনাস পরিসংখ্যান API"""
-    try:
-        data = data_collector.get_all_data()
-        model_stats = ai_model.get_model_stats()
-        
-        return jsonify({
-            'bonus_counts': model_stats.get('bonus_counts', {}),
-            'total_bonus': sum(model_stats.get('bonus_counts', {}).values()),
-            'last_trained': model_stats.get('last_trained'),
-            'accuracy': model_stats.get('accuracy', 0)
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/')
 def serve_index():
@@ -240,32 +142,19 @@ def get_predictions():
         if len(data) < 20:
             return jsonify({
                 'predictions': [['1', 0.2], ['2', 0.15], ['5', 0.15], ['10', 0.1],
-                               [['CF', 0.15], ['CH', 0.1], ['CB', 0.08], ['PC', 0.07]],
+                               ['CF', 0.15], ['CH', 0.1], ['CB', 0.08], ['PC', 0.07]],
                 'model_status': {
                     'accuracy': 0.125,
                     'data_points': len(data),
-                    'learning_phase': 'বেসিক'
+                    'learning_phase': 'বেসিক',
+                    'bonus_stats': {}
                 }
             })
         
         predictions = ai_model.get_ensemble_prediction(data)
         
-        # ফ্যাক্টর ডাটা যোগ করুন
-        factors = {
-            'markov_2gram': 0.65,
-            'markov_3gram': 0.72,
-            'markov_4gram': 0.68,
-            'bonus_transition': 0.70,
-            'dealer_prob': 0.65,
-            'multiplier_prob': 0.48,
-            'time_prob': 0.53,
-            'hot_prob': 0.81,
-            'bonus_gap': 0.60
-        }
-        
         response = {
             'predictions': predictions[:8],
-            'factors': factors,
             'model_status': {
                 'accuracy': ai_model.accuracy_history[-1] if ai_model.accuracy_history else 0.125,
                 'trained': ai_model.last_trained.isoformat() if ai_model.last_trained else None,
@@ -318,13 +207,11 @@ def get_status():
 
 @app.route('/api/health')
 def health():
-    """হেলথ চেক"""
+    """হেলথ চেক - সবসময় 200 return"""
     return jsonify({
         'status': 'healthy',
-        'background_thread': background_thread_running,
-        'initial_data_collected': initial_data_collected,
         'timestamp': datetime.now().isoformat()
-    })
+    }), 200
 
 @app.route('/api/refresh', methods=['POST'])
 def force_refresh():
