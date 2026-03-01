@@ -270,7 +270,7 @@ def get_predictions():
                 'accuracy': ai_model.accuracy_history[-1] if ai_model.accuracy_history else 0.125,
                 'trained': ai_model.last_trained.isoformat() if ai_model.last_trained else None,
                 'data_points': len(data),
-                'learning_phase': 'অ্যাডভান্সড' if len(data) > 200 else 'বেসিক'
+                'learning_phase': 'অ্যাডভান্সড' if len(data) > 200 else 'বেসিক',
                 'bonus_stats': ai_model.get_model_stats().get('bonus_counts', {})
             },
             'timestamp': datetime.now().isoformat()
